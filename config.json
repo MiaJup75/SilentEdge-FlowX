@@ -1,0 +1,10 @@
+{
+  "base_token": "BTC",
+  "quote_token": "USDC",
+  "trade_amount": 10,
+  "take_profit_percent": 3,
+  "stop_loss_percent": 2,
+  "cooldown_minutes": 30,
+  "trading_mode": "sniper",
+  "auto_trade_enabled": true
+}
