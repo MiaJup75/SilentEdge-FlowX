@@ -6,13 +6,16 @@ Status: {result['status']}
 TX: <code>{result['tx_hash']}</code>"""
 
 def format_balance_text(balances):
-    lines = ["<b>📊 Wallet Balance</b>"]
-    for symbol, data in balances.items():
-        amt = data.get("amount", 0)
-        usd = data.get("usd", 0)
-        emoji = "🟡" if amt == 0 else "🟢"
-        lines.append(f"{emoji} {symbol}: {amt:.4f} (${usd:,.2f})")
-    return "\n".join(lines)
+    try:
+        lines = ["<b>📊 Wallet Balance</b>"]
+        for symbol, data in balances.items():
+            amt = data.get("amount", 0)
+            usd = data.get("usd", 0)
+            emoji = "🟡" if amt == 0 else "🟢"
+            lines.append(f"{emoji} {symbol}: {amt:.4f} (${usd:,.2f})")
+        return "\n".join(lines)
+    except Exception as e:
+        return f"<b>❌ Format Error</b>\n{str(e)}\n\nRaw Data:\n<code>{balances}</code>"
 
 def format_error_message(msg):
     return f"❌ <b>Error</b>\n{msg}"
