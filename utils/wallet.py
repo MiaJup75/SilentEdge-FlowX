@@ -9,15 +9,16 @@ def load_wallet():
 
     seed_bytes = Bip39SeedGenerator(mnemonic).Generate()
 
-    # Derive Account 1, External Chain, Address 0
+    # Derive Account 1 → External → Address Index 0
     account = Bip44.FromSeed(seed_bytes, Bip44Coins.SOLANA) \
                    .Purpose().Coin().Account(1) \
                    .Change(Bip44Changes.CHAIN_EXT) \
                    .AddressIndex(0)
 
-    # ✅ Manual 32 + 32 = 64 bytes
+    # ✅ Use UNCOMPRESSED public key (32 bytes)
     private_key = account.PrivateKey().Raw().ToBytes()
-    public_key = account.PublicKey().RawCompressed().ToBytes()
+    public_key = account.PublicKey().RawUncompressed().ToBytes()  # ✅ FIXED
+
     keypair_bytes = private_key + public_key
 
     if len(keypair_bytes) != 64:
