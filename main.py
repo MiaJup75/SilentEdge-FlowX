@@ -168,7 +168,7 @@ def sell(update: Update, context: CallbackContext):
 # === /balance Command ===
 def balance(update: Update, context: CallbackContext):
     try:
-        bal = get_wallet_balance(wallet)
+        bal = get_wallet_balance(wallet_address)
         update.message.reply_text(
             format_balance_text(bal),
             parse_mode=ParseMode.HTML
