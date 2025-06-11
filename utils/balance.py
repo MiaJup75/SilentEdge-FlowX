@@ -4,10 +4,15 @@ from solana.rpc.api import Client
 from solana.publickey import PublicKey
 from spl.token.instructions import get_associated_token_address
 
-# Supported SPL token mints
+# === Supported SPL Token Mints (top trader tier) ===
 TOKEN_MINTS = {
-    "USDC": "Es9vMFrzaCERsbyzNKzD4DM6YkT6rzdEDHHZLCXh4MfP",   # USDC
-    "wBTC": "9n4nbM75f5Ui33ZbPYXn59EwSgE8CGsHtAeTH5YFeJ9E",   # Wrapped BTC
+    "USDC": "Es9vMFrzaCERsbyzNKzD4DM6YkT6rzdEDHHZLCXh4MfP",
+    "wBTC": "9n4nbM75f5Ui33ZbPYXn59EwSgE8CGsHtAeTH5YFeJ9E",
+    "wETH": "7vfCXT3cJZ4zWz8HQvbLkz8oxhZPZ1VZsMLZ8Nf2eXGJ",
+    "wXRP": "E4rCSzmrGuwKkfbwbAkbwX3B7d69LFMCQpZDVf2RZhv6",
+    "JUP": "JUP4Fb2cqiRUcaTHdrPC8h2gNsA2ETXiPDD33WcGuJB",
+    "PYTH": "PythxvM1dYF9Q1DwKf3a4dVZzzNKm5ST4VG2EyB7J62",
+    "USDT": "BQhyUSDT9wpT7NxqrzUwVw5FxLaM7ZqepZL3wxY3Zy1j"
 }
 
 BIRDEYE_API_KEY = os.getenv("BIRDEYE_API_KEY")
@@ -16,19 +21,19 @@ BIRDEYE_PRICE_URL = "https://public-api.birdeye.so/public/price"
 
 client = Client(SOLANA_RPC_URL)
 
+# === Price Fetch Helper ===
 def fetch_price(mint: str) -> float:
-    """Safely fetch token price in USD using BirdEye"""
     try:
         headers = {"X-API-KEY": BIRDEYE_API_KEY}
         url = f"{BIRDEYE_PRICE_URL}?address={mint}"
         response = requests.get(url, headers=headers, timeout=5)
-        response.raise_for_status()
         data = response.json()
-        return float(data.get("data", {}).get("value", 0.0))
+        return float(data["data"]["value"])
     except Exception as e:
         print(f"❌ Error fetching price for {mint}: {e}")
         return 0.0
 
+# === Balance Parser ===
 def get_wallet_balance(wallet_address: str) -> dict:
     balances = {}
     pubkey = PublicKey(wallet_address)
@@ -41,7 +46,7 @@ def get_wallet_balance(wallet_address: str) -> dict:
         sol_price = fetch_price("So11111111111111111111111111111111111111112")
         balances["SOL"] = {
             "amount": sol,
-            "usd": round(sol * sol_price, 2)
+            "usd": sol * sol_price
         }
     except Exception as e:
         print(f"❌ Error fetching SOL: {e}")
@@ -56,10 +61,12 @@ def get_wallet_balance(wallet_address: str) -> dict:
             price = fetch_price(mint)
             balances[symbol] = {
                 "amount": amount,
-                "usd": round(amount * price, 2)
+                "usd": amount * price
             }
         except Exception as e:
             print(f"⚠️ Error fetching {symbol}: {e}")
             balances[symbol] = {"amount": 0.0, "usd": 0.0}
 
-    return balances
+    # === Sorted by USD descending ===
+    sorted_balances = dict(sorted(balances.items(), key=lambda item: item[1]['usd'], reverse=True))
+    return sorted_balances
