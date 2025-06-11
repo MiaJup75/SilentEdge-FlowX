@@ -5,11 +5,12 @@ Amount: ${result['amount']}
 Status: {result['status']}
 TX: <code>{result['tx_hash']}</code>"""
 
-def format_balance_text(balance):
-    lines = ["<b>📊 Wallet Balances</b>"]
-    for token, data in balance.items():
-        usd_value = f"${data['usd']:.2f}" if data['usd'] is not None else "N/A"
-        lines.append(f"{token.upper()}: {data['amount']:.4f} ({usd_value})")
+def format_balance_text(balances):
+    lines = ["<b>📊 Wallet Balance</b>"]
+    for symbol, data in balances.items():
+        amt = data.get("amount", 0)
+        usd = data.get("usd", 0)
+        lines.append(f"{symbol}: {amt:.4f} (${usd:,.2f})")
     return "\n".join(lines)
 
 def format_error_message(msg):
