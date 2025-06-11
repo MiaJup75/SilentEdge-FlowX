@@ -9,13 +9,15 @@ def load_wallet():
 
     seed_bytes = Bip39SeedGenerator(mnemonic).Generate()
     
-    # 🔥 Derive Account #1 instead of Account #0
+    # 🎯 Load Account #1 instead of Account #0
     account = Bip44.FromSeed(seed_bytes, Bip44Coins.SOLANA) \
                    .Purpose().Coin().Account(1) \
                    .Change(Bip44Changes.CHAIN_EXT).AddressIndex(0)
 
-    private_key_bytes = account.PrivateKey().Raw().ToBytes()
-    return Keypair.from_bytes(private_key_bytes)
+    private_key = account.PrivateKey().Raw().ToBytes()
+    public_key = account.PublicKey().RawCompressed().ToBytes()
+
+    return Keypair.from_bytes(private_key + public_key)
 
 def get_wallet_address(wallet):
     return str(wallet.pubkey())
