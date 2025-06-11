@@ -284,18 +284,18 @@ def main():
         webhook_url=f"{WEBHOOK_URL}/{TELEGRAM_TOKEN}"
     )
 
-    # Slash command handlers
-    dp.add_handler(CommandHandler("start", start))
-    dp.add_handler(CommandHandler("buy", buy))
-    dp.add_handler(CommandHandler("sell", sell))
-    dp.add_handler(CommandHandler("balance", balance))
-    dp.add_handler(CommandHandler("ping", ping))
-    dp.add_handler(CommandHandler("help", help_cmd))
-    dp.add_handler(CommandHandler("debug", debug))
-    dp.add_handler(CommandHandler("menu", menu))
-    dp.add_handler(CommandHandler("aiprompt", aiprompt))
+   # Slash command handlers
+dp.add_handler(CommandHandler("start", start))
+dp.add_handler(CommandHandler("buy", buy))
+dp.add_handler(CommandHandler("sell", sell))
+dp.add_handler(CommandHandler("balance", balance))
+dp.add_handler(CommandHandler("ping", ping))
+dp.add_handler(CommandHandler("help", help_cmd))
+dp.add_handler(CommandHandler("debug", debug))
+dp.add_handler(CommandHandler("menu", menu))
+dp.add_handler(CommandHandler("aiprompt", aiprompt))
 
-    # Register slash commands so Telegram shows them when typing /
+# Register slash commands so Telegram shows them when typing /
 updater.bot.set_my_commands([
     ("start", "Launch bot"),
     ("buy", "Simulate Buy"),
@@ -308,16 +308,16 @@ updater.bot.set_my_commands([
     ("aiprompt", "Ask ChatGPT")
 ])
 
-    # Callback button handler
-    dp.add_handler(CallbackQueryHandler(button))
+# Callback button handler
+dp.add_handler(CallbackQueryHandler(button))
 
-    # Optional message fallback
-    dp.add_handler(MessageHandler(Filters.text & ~Filters.command, fallback_message))
+# Optional message fallback
+dp.add_handler(MessageHandler(Filters.text & ~Filters.command, fallback_message))
 
-    # Start polling
-    updater.start_polling()
-    logger.info("✅ Flow X Bot is live and listening...")
-    updater.idle()
+# Start polling
+updater.start_polling()
+logger.info("✅ Flow X Bot is live and listening...")
+updater.idle()
 
 # === Fallback Text Response ===
 def fallback_message(update: Update, context: CallbackContext):
