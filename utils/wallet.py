@@ -1,15 +1,14 @@
-import os
 import base58
-from solana.keypair import Keypair
+import os
+from solders.keypair import Keypair
+from solana.rpc.api import Client
 
-# Load wallet from base58-encoded private key stored in env
 def load_wallet():
-    secret_key_b58 = os.getenv("SOLFLARE_PRIVATE_KEY")
-    if not secret_key_b58:
-        raise ValueError("Missing SOLFLARE_PRIVATE_KEY in environment variables.")
-    
-    secret_key_bytes = base58.b58decode(secret_key_b58)
-    return Keypair.from_secret_key(secret_key_bytes)
+    base58_key = os.getenv("SOLFLARE_PRIVATE_KEY")
+    if not base58_key:
+        raise ValueError("Missing SOLFLARE_PRIVATE_KEY env variable.")
+    secret_key_bytes = base58.b58decode(base58_key)
+    return Keypair.from_bytes(secret_key_bytes)
 
 def get_wallet_address(wallet):
-    return str(wallet.public_key)
+    return str(wallet.pubkey())
