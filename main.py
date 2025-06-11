@@ -43,7 +43,6 @@ wallet_address = get_wallet_address(wallet)
 
 print("🧠 Wallet Address:", wallet_address)
 
-from utils.balance import get_wallet_balance
 balance = get_wallet_balance(wallet_address)
 print("💰 Wallet Balance:", balance)
 
@@ -55,7 +54,7 @@ def start(update: Update, context: CallbackContext):
 
     welcome = (
         f"<b>👋 Welcome to Flow X Bot</b>\n\n"
-        f"<b>Wallet:</b> <code>{wallet_address}</code>\n"
+        f"<b>Wallet:</b> <code>{get_wallet_address(wallet)}</code>\n"
         f"<b>Mode:</b> {'✅ LIVE' if LIVE_MODE else '🧪 SIMULATION'}\n"
         f"<b>Trade Amount:</b> ${TRADE_AMOUNT_USDC:.2f}\n\n"
         f"Use the menu below to get started."
@@ -214,7 +213,7 @@ def help_cmd(update: Update, context: CallbackContext):
 # === /debug Command ===
 def debug(update: Update, context: CallbackContext):
     try:
-        debug_text = format_debug_info(wallet_address, LIVE_MODE, TRADE_AMOUNT_USDC)
+        debug_text = format_debug_info(get_wallet_address(wallet), LIVE_MODE, TRADE_AMOUNT_USDC)
         update.message.reply_text(
             debug_text,
             parse_mode=ParseMode.HTML
