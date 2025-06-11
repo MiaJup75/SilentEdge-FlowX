@@ -1,22 +1,17 @@
 import os
-from bip_utils import Bip39SeedGenerator, Bip44, Bip44Coins, Bip44Changes
+import base64
 from solders.keypair import Keypair
 
 def load_wallet():
-    mnemonic_phrase = "zero another until inform oppose dentist clerk body apology certain ball midnight"
-    
-    # Generate seed from mnemonic
-    seed_bytes = Bip39SeedGenerator(mnemonic_phrase).Generate()
-    
-    # Derive Solana key using BIP44 path m/44'/501'/0'/0'
-    bip44_ctx = Bip44.FromSeed(seed_bytes, Bip44Coins.SOLANA).Purpose().Coin().Account(0).Change(Bip44Changes.CHAIN_EXT).AddressIndex(0)
-    priv_key_bytes = bip44_ctx.PrivateKey().Raw().ToBytes()
+    base64_key = os.getenv("SOLFLARE_PRIVATE_KEY")
+    if not base64_key:
+        raise ValueError("Missing SOLFLARE_PRIVATE_KEY in environment")
 
-    # Build solders Keypair
-    keypair = Keypair.from_seed(priv_key_bytes)
+    secret_key_bytes = base64.b64decode(base64_key)
+    if len(secret_key_bytes) != 64:
+        raise ValueError("SOLFLARE_PRIVATE_KEY must decode to 64 bytes")
 
-    print(f"🔐 Wallet Address: {keypair.pubkey()}")
-    return keypair
+    return Keypair.from_bytes(secret_key_bytes)
 
 def get_wallet_address(wallet):
     return str(wallet.pubkey())
