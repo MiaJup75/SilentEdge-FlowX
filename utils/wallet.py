@@ -1,9 +1,9 @@
 import os
 import base64
-from solders.keypair import Keypair
+from solana.keypair import Keypair  # ✅ Correct import
 
 def load_wallet():
-    base64_key = os.getenv("PHANTOM_PRIVATE_KEY")  # ✅ updated var name
+    base64_key = os.getenv("PHANTOM_PRIVATE_KEY")
     if not base64_key:
         raise ValueError("Missing PHANTOM_PRIVATE_KEY in environment")
 
@@ -11,7 +11,7 @@ def load_wallet():
     if len(secret_key_bytes) != 64:
         raise ValueError("PHANTOM_PRIVATE_KEY must decode to 64 bytes")
 
-    return Keypair.from_bytes(secret_key_bytes)
+    return Keypair.from_secret_key(secret_key_bytes)  # ✅ Correct method
 
 def get_wallet_address(wallet):
-    return str(wallet.pubkey())
+    return str(wallet.public_key)  # ✅ Correct property
