@@ -17,12 +17,14 @@ BIRDEYE_PRICE_URL = "https://public-api.birdeye.so/public/price"
 client = Client(SOLANA_RPC_URL)
 
 def fetch_price(mint: str) -> float:
+    """Safely fetch token price in USD using BirdEye"""
     try:
         headers = {"X-API-KEY": BIRDEYE_API_KEY}
         url = f"{BIRDEYE_PRICE_URL}?address={mint}"
         response = requests.get(url, headers=headers, timeout=5)
+        response.raise_for_status()
         data = response.json()
-        return float(data["data"]["value"])
+        return float(data.get("data", {}).get("value", 0.0))
     except Exception as e:
         print(f"❌ Error fetching price for {mint}: {e}")
         return 0.0
@@ -39,7 +41,7 @@ def get_wallet_balance(wallet_address: str) -> dict:
         sol_price = fetch_price("So11111111111111111111111111111111111111112")
         balances["SOL"] = {
             "amount": sol,
-            "usd": sol * sol_price
+            "usd": round(sol * sol_price, 2)
         }
     except Exception as e:
         print(f"❌ Error fetching SOL: {e}")
@@ -54,7 +56,7 @@ def get_wallet_balance(wallet_address: str) -> dict:
             price = fetch_price(mint)
             balances[symbol] = {
                 "amount": amount,
-                "usd": amount * price
+                "usd": round(amount * price, 2)
             }
         except Exception as e:
             print(f"⚠️ Error fetching {symbol}: {e}")
