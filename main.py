@@ -41,6 +41,12 @@ OWNER_ID = int(os.getenv("OWNER_ID", "0"))
 wallet = load_wallet()
 wallet_address = get_wallet_address(wallet)
 
+print("🧠 Wallet Address:", wallet_address)
+
+from utils.balance import get_wallet_balance
+balance = get_wallet_balance(wallet_address)
+print("💰 Wallet Balance:", balance)
+
 # === Start Command ===
 def start(update: Update, context: CallbackContext):
     user = update.effective_user
