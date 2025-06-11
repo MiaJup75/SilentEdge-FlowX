@@ -9,13 +9,13 @@ def load_wallet():
 
     seed_bytes = Bip39SeedGenerator(mnemonic).Generate()
     
-    # 🎯 Load Account #1 instead of Account #0
+    # 🎯 Load Account #1 from Phantom
     account = Bip44.FromSeed(seed_bytes, Bip44Coins.SOLANA) \
                    .Purpose().Coin().Account(1) \
                    .Change(Bip44Changes.CHAIN_EXT).AddressIndex(0)
 
     private_key = account.PrivateKey().Raw().ToBytes()
-    public_key = account.PublicKey().RawCompressed().ToBytes()
+    public_key = account.PublicKey().RawUncompressed().ToBytes()[1:]  # ✅ Fix here
 
     return Keypair.from_bytes(private_key + public_key)
 
