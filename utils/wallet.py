@@ -7,18 +7,20 @@ def load_wallet():
     if not mnemonic:
         raise ValueError("Missing PHANTOM_MNEMONIC in environment variables")
 
+    # Generate seed from mnemonic
     seed_bytes = Bip39SeedGenerator(mnemonic).Generate()
 
-    # ✅ Derive Account 1, not Account 0
+    # Derive Account 1, External Chain, Address 0
     account = Bip44.FromSeed(seed_bytes, Bip44Coins.SOLANA) \
                    .Purpose().Coin().Account(1) \
                    .Change(Bip44Changes.CHAIN_EXT) \
                    .AddressIndex(0)
 
-    private_key = account.PrivateKey().Raw().ToBytes()
-    public_key = account.PublicKey().RawCompressed().ToBytes()
+    # ⚠️ Correct way: get full 64-byte secret key
+    keypair_bytes = account.PrivateKey().Raw().ToExtended()
 
-    return Keypair.from_bytes(private_key + public_key)
+    # ✅ Use the correct format for solders.Keypair
+    return Keypair.from_bytes(keypair_bytes)
 
 def get_wallet_address(wallet):
     return str(wallet.pubkey())
