@@ -284,9 +284,6 @@ def main():
         webhook_url=f"{WEBHOOK_URL}/{TELEGRAM_TOKEN}"
     )
 
-# === Bot Dispatcher Setup ===
-dp = updater.dispatcher
-
    # Slash command handlers
 dp.add_handler(CommandHandler("start", start))
 dp.add_handler(CommandHandler("buy", buy))
