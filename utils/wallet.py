@@ -8,14 +8,15 @@ def load_wallet():
         raise ValueError("Missing PHANTOM_MNEMONIC in environment variables")
 
     seed_bytes = Bip39SeedGenerator(mnemonic).Generate()
-    
-    # 🎯 Load Account #1 from Phantom
+
+    # ✅ Derive Account 1, not Account 0
     account = Bip44.FromSeed(seed_bytes, Bip44Coins.SOLANA) \
                    .Purpose().Coin().Account(1) \
-                   .Change(Bip44Changes.CHAIN_EXT).AddressIndex(0)
+                   .Change(Bip44Changes.CHAIN_EXT) \
+                   .AddressIndex(0)
 
     private_key = account.PrivateKey().Raw().ToBytes()
-    public_key = account.PublicKey().RawUncompressed().ToBytes()[1:]  # ✅ Fix here
+    public_key = account.PublicKey().RawCompressed().ToBytes()
 
     return Keypair.from_bytes(private_key + public_key)
 
