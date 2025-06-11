@@ -10,7 +10,8 @@ def format_balance_text(balances):
     for symbol, data in balances.items():
         amt = data.get("amount", 0)
         usd = data.get("usd", 0)
-        lines.append(f"{symbol}: {amt:.4f} (${usd:,.2f})")
+        emoji = "🟡" if amt == 0 else "🟢"
+        lines.append(f"{emoji} {symbol}: {amt:.4f} (${usd:,.2f})")
     return "\n".join(lines)
 
 def format_error_message(msg):
