@@ -6,10 +6,11 @@ Status: {result['status']}
 TX: <code>{result['tx_hash']}</code>"""
 
 def format_balance_text(balance):
-    text = "<b>📊 Wallet Balance</b>\n"
-    for token, amount in balance.items():
-        text += f"{token}: {amount:.4f}\n"
-    return text.strip()
+    lines = ["<b>📊 Wallet Balances</b>"]
+    for token, data in balance.items():
+        usd_value = f"${data['usd']:.2f}" if data['usd'] is not None else "N/A"
+        lines.append(f"{token.upper()}: {data['amount']:.4f} ({usd_value})")
+    return "\n".join(lines)
 
 def format_error_message(msg):
     return f"❌ <b>Error</b>\n{msg}"
