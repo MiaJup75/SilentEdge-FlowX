@@ -9,6 +9,11 @@ def load_wallet():
         raise ValueError("Missing SOLFLARE_PRIVATE_KEY in environment")
 
     secret_key_bytes = base64.b64decode(base64_key)
+
+    # Debug statements to verify correct decoding
+    print(f"🔍 Decoded secret key length: {len(secret_key_bytes)}")
+    print(f"🔑 First 10 bytes: {list(secret_key_bytes[:10])}")
+
     if len(secret_key_bytes) != 64:
         raise ValueError("SOLFLARE_PRIVATE_KEY must decode to 64 bytes")
 
