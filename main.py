@@ -308,7 +308,7 @@ updater.bot.set_my_commands([
     ("aiprompt", "Ask ChatGPT")
 ])
 
-    # Callback button handler
+       # Callback button handler
     dp.add_handler(CallbackQueryHandler(button))
 
     # Optional message fallback
@@ -318,6 +318,7 @@ updater.bot.set_my_commands([
     updater.start_polling()
     logger.info("✅ Flow X Bot is live and listening...")
     updater.idle()
+
 
 # === Fallback Text Response ===
 def fallback_message(update: Update, context: CallbackContext):
