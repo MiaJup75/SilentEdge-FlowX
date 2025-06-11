@@ -4,6 +4,5 @@ flask
 apscheduler
 pytz
 solana
-solders
 base58
 openai
