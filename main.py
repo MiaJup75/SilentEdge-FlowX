@@ -275,6 +275,16 @@ def main():
     updater = Updater(token=TELEGRAM_TOKEN, use_context=True)
     dp = updater.dispatcher
 
+    PORT = int(os.environ.get("PORT", "10000"))
+    WEBHOOK_URL = os.environ.get("WEBHOOK_URL")
+
+    updater.start_webhook(
+        listen="0.0.0.0",
+        port=PORT,
+        url_path=TELEGRAM_TOKEN,
+        webhook_url=f"{WEBHOOK_URL}/{TELEGRAM_TOKEN}"
+    )
+
     # Slash command handlers
     dp.add_handler(CommandHandler("start", start))
     dp.add_handler(CommandHandler("buy", buy))
