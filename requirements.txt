@@ -6,5 +6,5 @@ pytz
 solana
 solders
 base58
-openai
 bip_utils
+openai
