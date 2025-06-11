@@ -1,9 +1,18 @@
 from solana.rpc.api import Client
+from solana.publickey import PublicKey
 
-SOLANA_RPC = "https://api.mainnet-beta.solana.com"
-client = Client(SOLANA_RPC)
+def get_wallet_balance(wallet_address: str) -> str:
+    try:
+        client = Client("https://api.mainnet-beta.solana.com")
+        pubkey = PublicKey(wallet_address)
+        result = client.get_balance(pubkey)
 
-def get_wallet_balance(wallet):
-    pubkey = wallet.pubkey()
-    sol_balance = client.get_balance(pubkey)["result"]["value"] / 1e9
-    return {"sol": sol_balance}
+        if not result.get("result") or "value" not in result["result"]:
+            return f"❌ Error: Invalid balance response → {result}"
+
+        lamports = result["result"]["value"]
+        sol = lamports / 1_000_000_000
+        return f"{sol:.4f} SOL"
+
+    except Exception as e:
+        return f"❌ Exception in get_wallet_balance(): {str(e)}"
