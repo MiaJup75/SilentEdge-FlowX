@@ -1,13 +1,15 @@
-from solders.keypair import Keypair
-from solana.rpc.api import Client
+import os
+import base58
+from solana.keypair import Keypair
 
-# Load wallet from 12-word mnemonic (hardcoded for now)
+# Load wallet from base58-encoded private key stored in env
 def load_wallet():
-    mnemonic = [
-        "zero", "another", "until", "inform", "oppose", "dentist",
-        "clerk", "body", "apology", "certain", "ball", "midnight"
-    ]
-    return Keypair.from_mnemonic(mnemonic)
+    secret_key_b58 = os.getenv("SOLFLARE_PRIVATE_KEY")
+    if not secret_key_b58:
+        raise ValueError("Missing SOLFLARE_PRIVATE_KEY in environment variables.")
+    
+    secret_key_bytes = base58.b58decode(secret_key_b58)
+    return Keypair.from_secret_key(secret_key_bytes)
 
 def get_wallet_address(wallet):
-    return str(wallet.pubkey())
+    return str(wallet.public_key)
