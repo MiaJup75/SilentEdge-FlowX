@@ -37,8 +37,7 @@ def save_state(state):
 
 # === Pause Logic ===
 def is_paused():
-    state = load_state()
-    return state.get("paused", False)
+    return load_state().get("paused", False)
 
 def toggle_pause():
     state = load_state()
@@ -71,16 +70,7 @@ def set_limit(value: int):
     state["daily_limit"] = value
     save_state(state)
 
-# === Status & Tracking ===
-def get_status_report():
-    state = load_state()
-    return (
-        f"📊 <b>Bot Status</b>\n"
-        f"⛔ Paused: {'Yes' if state['paused'] else 'No'}\n"
-        f"📈 Daily Limit: {state['daily_limit']}\n"
-        f"🔄 Trades Today: {state['trades_today']}"
-    )
-
+# === Trade Count Access ===
 def check_and_increment_trade_count():
     state = load_state()
     today = datetime.utcnow().strftime("%Y-%m-%d")
@@ -98,3 +88,19 @@ def get_trade_count():
     if state.get("last_reset") != today:
         return 0
     return state.get("trades_today", 0)
+
+def reset_trade_count():
+    state = load_state()
+    state["trades_today"] = 0
+    state["last_reset"] = datetime.utcnow().strftime("%Y-%m-%d")
+    save_state(state)
+
+# === Status Output ===
+def get_status_report():
+    state = load_state()
+    return (
+        f"📊 <b>Bot Status</b>\n"
+        f"⛔ Paused: {'Yes' if state['paused'] else 'No'}\n"
+        f"📈 Daily Limit: {state['daily_limit']}\n"
+        f"🔄 Trades Today: {state['trades_today']}"
+    )
