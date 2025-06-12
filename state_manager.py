@@ -99,3 +99,9 @@ def reset_trade_count():
     state["trades_today"] = 0
     state["last_reset"] = datetime.utcnow().strftime("%Y-%m-%d")
     save_state(state)
+
+# === Directly Set Pause State (True/False) ===
+def set_pause(value: bool):
+    state = load_state()
+    state["paused"] = value
+    save_state(state)
