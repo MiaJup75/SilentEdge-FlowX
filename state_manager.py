@@ -35,36 +35,43 @@ def save_state(state):
     with open(STATE_FILE, "w") as f:
         json.dump(state, f)
 
-# === Check If Trading Paused ===
+# === Pause Logic ===
 def is_paused():
     state = load_state()
     return state.get("paused", False)
 
-# === Toggle Pause ===
 def toggle_pause():
     state = load_state()
     state["paused"] = not state["paused"]
     save_state(state)
     return state["paused"]
 
-# === Check Trade Limit ===
+def set_pause(value: bool):
+    state = load_state()
+    state["paused"] = value
+    save_state(state)
+
+# === Limit Logic ===
 def trade_limit_reached():
     state = load_state()
     return state["trades_today"] >= state.get("daily_limit", 10)
 
-# === Increment Trade Count ===
 def record_trade():
     state = load_state()
     state["trades_today"] += 1
     save_state(state)
 
-# === Set Daily Limit ===
 def set_daily_limit(limit):
     state = load_state()
     state["daily_limit"] = limit
     save_state(state)
 
-# === Get Status Report ===
+def set_limit(value: int):
+    state = load_state()
+    state["daily_limit"] = value
+    save_state(state)
+
+# === Status & Tracking ===
 def get_status_report():
     state = load_state()
     return (
@@ -74,7 +81,6 @@ def get_status_report():
         f"🔄 Trades Today: {state['trades_today']}"
     )
 
-# === Compatibility for trade count (used in main.py) ===
 def check_and_increment_trade_count():
     state = load_state()
     today = datetime.utcnow().strftime("%Y-%m-%d")
@@ -92,16 +98,3 @@ def get_trade_count():
     if state.get("last_reset") != today:
         return 0
     return state.get("trades_today", 0)
-
-# === Reset Trade Count (Manual override) ===
-def reset_trade_count():
-    state = load_state()
-    state["trades_today"] = 0
-    state["last_reset"] = datetime.utcnow().strftime("%Y-%m-%d")
-    save_state(state)
-
-# === Directly Set Pause State (True/False) ===
-def set_pause(value: bool):
-    state = load_state()
-    state["paused"] = value
-    save_state(state)
