@@ -14,6 +14,7 @@ from utils.trade import execute_jupiter_trade
 from utils.balance import get_wallet_balance
 from utils.format import (
     format_trade_result,
+    format_balance_text,
     format_error_message,
     format_help_text,
     format_debug_info
