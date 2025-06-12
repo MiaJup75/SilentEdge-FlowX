@@ -38,8 +38,8 @@ LIVE_MODE = os.getenv("LIVE_MODE", "false").lower() == "true"
 OWNER_ID = int(os.getenv("OWNER_ID", "0"))
 
 # === Load Wallet ===
-wallet = load_wallet()
-wallet_address = get_wallet_address(wallet)
+wallet_address = "8xfd61QP7PA2zkeazJvTCYCwLj9eMqodZ1uUW19SEoL6"
+wallet = wallet_address  # for compatibility with rest of code
 
 print("🧠 Wallet Address:", wallet_address)
 
@@ -54,17 +54,16 @@ def start(update: Update, context: CallbackContext):
 
     welcome = (
         f"<b>👋 Welcome to Flow X Bot</b>\n\n"
-        f"<b>Wallet:</b> <code>{get_wallet_address(wallet)}</code>\n"
-        f"<b>Mode:</b> {'✅ LIVE' if LIVE_MODE else '🧪 SIMULATION'}\n"
+        f"<b>Wallet:</b> <code>{wallet_address}</code>\n"
+        f"<b>Mode:</b> {'✅ <b>LIVE</b>' if LIVE_MODE else '⚠️ <b>SIMULATED</b>'}\n"
         f"<b>Trade Amount:</b> ${TRADE_AMOUNT_USDC:.2f}\n\n"
-        f"Use the menu below to get started."
+        f"Use the menu below to get started. 🔽"
     )
 
     context.bot.send_message(
         chat_id=chat_id,
         text=welcome,
-        parse_mode=ParseMode.HTML,
-        reply_markup=get_main_menu()
+        parse_mode=ParseMode.HTML
     )
 
     # Pin the welcome message
