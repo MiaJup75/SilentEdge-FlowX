@@ -278,6 +278,19 @@ def main():
     updater = Updater(token=TELEGRAM_TOKEN, use_context=True)
     dp = updater.dispatcher
 
+    # Register slash commands so Telegram shows them when typing /
+    updater.bot.set_my_commands([
+        ("start", "Launch bot"),
+        ("buy", "Simulate Buy"),
+        ("sell", "Simulate Sell"),
+        ("balance", "Wallet Balance"),
+        ("ping", "Jupiter Check"),
+        ("help", "Help Menu"),
+        ("debug", "Bot Status"),
+        ("menu", "Show Buttons"),
+        ("aiprompt", "Ask ChatGPT")
+    ])
+
     PORT = int(os.environ.get("PORT", "10000"))
     WEBHOOK_URL = os.environ.get("WEBHOOK_URL")
 
@@ -298,19 +311,6 @@ def main():
     dp.add_handler(CommandHandler("debug", debug))
     dp.add_handler(CommandHandler("menu", menu))
     dp.add_handler(CommandHandler("aiprompt", aiprompt))
-
-# Register slash commands so Telegram shows them when typing /
-updater.bot.set_my_commands([
-    ("start", "Launch bot"),
-    ("buy", "Simulate Buy"),
-    ("sell", "Simulate Sell"),
-    ("balance", "Wallet Balance"),
-    ("ping", "Jupiter Check"),
-    ("help", "Help Menu"),
-    ("debug", "Bot Status"),
-    ("menu", "Show Buttons"),
-    ("aiprompt", "Ask ChatGPT")
-])
 
 # Callback button handler
 dp.add_handler(CallbackQueryHandler(button))
