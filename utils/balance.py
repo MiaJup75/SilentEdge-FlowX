@@ -4,6 +4,7 @@ from solana.rpc.api import Client
 from solana.publickey import PublicKey
 from spl.token.instructions import get_associated_token_address
 
+# === Token Definitions ===
 TOKEN_MINTS = {
     "SOL": "So11111111111111111111111111111111111111112",
     "USDC": "Es9vMFrzaCERsbyzNKzD4DM6YkT6rzdEDHHZLCXh4MfP",
@@ -20,23 +21,22 @@ TOKEN_EMOJIS = {
     "wXRP": "💧"
 }
 
+# === Setup ===
 SOLANA_RPC_URL = "https://api.mainnet-beta.solana.com"
-DEXSCREENER_URL = "https://api.dexscreener.com/latest/dex/tokens"
-
 client = Client(SOLANA_RPC_URL)
 
-
+# === Price Fetching ===
 def fetch_price(mint: str) -> float:
     try:
-        response = requests.get(f"{DEXSCREENER_URL}/{mint}", timeout=10)
+        url = f"https://public-api.birdeye.so/defi/token_price?address={mint}"
+        response = requests.get(url, timeout=5)
         data = response.json()
-        price = float(data["pairs"][0]["priceUsd"])
-        return price
+        return float(data["data"]["value"])
     except Exception as e:
         print(f"❌ Error fetching price for {mint}: {e}")
         return 0.0
 
-
+# === Balance Fetching ===
 def get_wallet_balance(wallet_address: str) -> tuple:
     balances = {}
     pubkey = PublicKey(wallet_address)
@@ -50,15 +50,16 @@ def get_wallet_balance(wallet_address: str) -> tuple:
                 ata = get_associated_token_address(pubkey, PublicKey(mint))
                 token_info = client.get_token_account_balance(ata)
                 amount = float(token_info.get("result", {}).get("value", {}).get("uiAmount", 0))
-
             price = fetch_price(mint)
-            balances[symbol] = {"amount": amount, "usd": round(amount * price, 2)}
-
+            balances[symbol] = {
+                "amount": round(amount, 4),
+                "usd": round(amount * price, 2)
+            }
         except Exception as e:
             print(f"⚠️ Error fetching {symbol}: {e}")
             balances[symbol] = {"amount": 0.0, "usd": 0.0}
 
-    # UX Display
+    # === Formatting Summary ===
     total_usd = sum(token["usd"] for token in balances.values())
     display_lines = [f"💰 <b>Total Wallet Value:</b> ${round(total_usd, 2):,.2f}\n"]
 
@@ -69,4 +70,5 @@ def get_wallet_balance(wallet_address: str) -> tuple:
             f"{emoji} <b>{symbol}</b>: {data['amount']:.4f} ≈ ${data['usd']:.2f} ({percent:.1f}%)"
         )
 
-    return balances, "\n".join(display_lines)
+    balance_message = "\n".join(display_lines)
+    return balances, balance_message
