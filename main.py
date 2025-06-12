@@ -168,10 +168,10 @@ def sell(update: Update, context: CallbackContext):
 # === /balance Command ===
 def balance(update: Update, context: CallbackContext):
     try:
-        balances, msg = get_wallet_balance(wallet_address)
+        balances, balance_text = get_wallet_balance(wallet_address)
 
         update.message.reply_text(
-            msg,
+            balance_text,
             parse_mode=ParseMode.HTML
         )
     except Exception as e:
