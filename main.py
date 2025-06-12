@@ -271,9 +271,19 @@ def debug(update: Update, context: CallbackContext):
 def menu(update: Update, context: CallbackContext):
     try:
         update.message.reply_text("⏳ Loading menu...")
+
+        # Get live state data
+        from state_manager import load_state
+        state = load_state()
+        trades_today = state.get("trades_today", 0)
+
         update.message.reply_text(
             "📋 Main Menu:",
-            reply_markup=get_main_menu(is_live=LIVE_MODE, trade_limit=TRADE_AMOUNT_USDC),
+            reply_markup=get_main_menu(
+                is_live=LIVE_MODE,
+                trade_limit=TRADE_AMOUNT_USDC,
+                trades_today=trades_today
+            ),
             parse_mode=ParseMode.HTML
         )
     except Exception as e:
