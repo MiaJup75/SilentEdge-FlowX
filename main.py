@@ -449,7 +449,7 @@ def fallback_message(update: Update, context: CallbackContext):
 
 # === Bot Startup ===
 if __name__ == '__main__':
-    updater = Updater(TOKEN, use_context=True)
+    updater = Updater(token=TELEGRAM_TOKEN, use_context=True)
     dispatcher = updater.dispatcher
     job_queue = updater.job_queue
 
