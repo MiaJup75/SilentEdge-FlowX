@@ -68,13 +68,13 @@ def start(update: Update, context: CallbackContext):
         text=welcome,
         parse_mode=ParseMode.HTML
     )
-        # Pin the welcome message
+
+    # Pin the welcome message
     try:
         pin_welcome_message(context.bot, chat_id)
     except Exception as e:
         logger.warning(f"Could not pin message: {e}")
-
-# === Button Handler ===
+        # === Button Handler ===
 def button(update: Update, context: CallbackContext):
     query = update.callback_query
     user_id = update.effective_user.id
@@ -137,7 +137,7 @@ def button(update: Update, context: CallbackContext):
             text=format_error_message("❌ Something went wrong. Try again."),
             parse_mode=ParseMode.HTML
         )
-        # === /buy Command ===
+# === /buy Command ===
 def buy(update: Update, context: CallbackContext):
     try:
         update.message.reply_text("⏳ Executing buy trade...")
@@ -200,7 +200,6 @@ def ping(update: Update, context: CallbackContext):
             format_error_message("❌ Ping check failed."),
             parse_mode=ParseMode.HTML
         )
-
 # === /help Command ===
 def help_cmd(update: Update, context: CallbackContext):
     try:
@@ -216,7 +215,8 @@ def help_cmd(update: Update, context: CallbackContext):
             format_error_message("❌ Help unavailable."),
             parse_mode=ParseMode.HTML
         )
-        # === /debug Command ===
+
+# === /debug Command ===
 def debug(update: Update, context: CallbackContext):
     try:
         update.message.reply_text("⏳ Gathering debug info...")
@@ -273,7 +273,8 @@ def aiprompt(update: Update, context: CallbackContext):
             format_error_message("❌ ChatGPT failed."),
             parse_mode=ParseMode.HTML
         )
-        # === Bot Launcher ===
+
+# === Bot Launcher ===
 def main():
     if not TELEGRAM_TOKEN:
         logger.error("❌ TELEGRAM_TOKEN missing. Cannot start bot.")
@@ -305,8 +306,7 @@ def main():
         url_path=TELEGRAM_TOKEN,
         webhook_url=f"{WEBHOOK_URL}/{TELEGRAM_TOKEN}"
     )
-
-    # Register command handlers
+        # Register command handlers
     dp.add_handler(CommandHandler("start", start))
     dp.add_handler(CommandHandler("buy", buy))
     dp.add_handler(CommandHandler("sell", sell))
@@ -328,12 +328,14 @@ def main():
     logger.info("✅ Flow X Bot is live and listening...")
     updater.idle()
 
+
 # === Fallback Text Response ===
 def fallback_message(update: Update, context: CallbackContext):
     update.message.reply_text(
         "🤖 I didn’t understand that. Use /menu to get started.",
         parse_mode=ParseMode.HTML
     )
+
 
 # === Entry Point ===
 if __name__ == '__main__':
