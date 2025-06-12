@@ -375,7 +375,7 @@ def main():
         ("buy", "Simulate Buy"),
         ("sell", "Simulate Sell"),
         ("balance", "Wallet Balance"),
-        ("pnl", "PnL Summary")
+        ("pnl", "PnL Summary"),
         ("ping", "Jupiter Check"),
         ("help", "Help Menu"),
         ("debug", "Bot Status"),
@@ -412,11 +412,12 @@ dp.add_handler(CallbackQueryHandler(button))
 # Catch-all for non-command messages
 dp.add_handler(MessageHandler(Filters.text & ~Filters.command, fallback_message))
 
+# === Scheduler: Daily 9AM Report ===
 from apscheduler.schedulers.background import BackgroundScheduler
 import pytz
 from datetime import time
+from utils.reporting import send_daily_pnl_summary
 
-# Setup daily report scheduler
 bkk_tz = pytz.timezone("Asia/Bangkok")
 scheduler = BackgroundScheduler(timezone=bkk_tz)
 scheduler.add_job(send_daily_pnl_summary, trigger='cron', hour=9, minute=0)
