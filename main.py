@@ -423,15 +423,16 @@ def main():
     dp.add_handler(MessageHandler(Filters.text & ~Filters.command, fallback_message))
 
 # === Scheduler: Daily 9AM Report ===
-from apscheduler.schedulers.background import BackgroundScheduler
 import pytz
-from datetime import time
+import datetime
 from utils.reporting import send_daily_pnl_summary
 
+job_queue = updater.job_queue
 bkk_tz = pytz.timezone("Asia/Bangkok")
-scheduler = BackgroundScheduler(timezone=bkk_tz)
-scheduler.add_job(send_daily_pnl_summary, trigger='cron', hour=9, minute=0)
-scheduler.start()
+job_queue.run_daily(
+    send_daily_pnl_summary,
+    time=datetime.time(hour=9, minute=0, tzinfo=bkk_tz)
+)
 
 # Start the bot
 updater.start_polling()
@@ -445,7 +446,6 @@ def fallback_message(update: Update, context: CallbackContext):
         "🤖 I didn’t understand that. Use /menu to get started.",
         parse_mode=ParseMode.HTML
     )
-
 
 # === Entry Point ===
 if __name__ == '__main__':
