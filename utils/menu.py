@@ -17,21 +17,24 @@ def get_main_menu(is_live=False, trade_limit=5):
             InlineKeyboardButton("💰 Buy", callback_data="buy"),
             InlineKeyboardButton("📤 Sell", callback_data="sell")
         ],
+
+        # Daily Insights
         [
             InlineKeyboardButton("📊 Balance", callback_data="balance"),
-            InlineKeyboardButton("🧠 Ask AI", callback_data="aiprompt")
-        ],
-        [
-            InlineKeyboardButton("📘 Help", callback_data="help"),
-            InlineKeyboardButton("🔄 Ping", callback_data="ping")
+            InlineKeyboardButton("📈 PnL", callback_data="pnl")
         ],
 
-        # Menu Refresh
+        # AI + Tools
         [
+            InlineKeyboardButton("🧠 Ask AI", callback_data="aiprompt"),
+            InlineKeyboardButton("📘 Help", callback_data="help")
+        ],
+        [
+            InlineKeyboardButton("🔄 Ping", callback_data="ping"),
             InlineKeyboardButton("🧭 Refresh Menu", callback_data="menu")
         ],
 
-        # Future Controls (can be activated later)
+        # Controls
         [
             InlineKeyboardButton("⏸ Pause Bot", callback_data="pause"),
             InlineKeyboardButton("⚠️ Set Limit", callback_data="limit")
