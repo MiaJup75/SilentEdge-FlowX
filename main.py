@@ -289,15 +289,15 @@ def main():
     )
 
    # Slash command handlers
-dp.add_handler(CommandHandler("start", start))
-dp.add_handler(CommandHandler("buy", buy))
-dp.add_handler(CommandHandler("sell", sell))
-dp.add_handler(CommandHandler("balance", balance))
-dp.add_handler(CommandHandler("ping", ping))
-dp.add_handler(CommandHandler("help", help_cmd))
-dp.add_handler(CommandHandler("debug", debug))
-dp.add_handler(CommandHandler("menu", menu))
-dp.add_handler(CommandHandler("aiprompt", aiprompt))
+    dp.add_handler(CommandHandler("start", start))
+    dp.add_handler(CommandHandler("buy", buy))
+    dp.add_handler(CommandHandler("sell", sell))
+    dp.add_handler(CommandHandler("balance", balance))
+    dp.add_handler(CommandHandler("ping", ping))
+    dp.add_handler(CommandHandler("help", help_cmd))
+    dp.add_handler(CommandHandler("debug", debug))
+    dp.add_handler(CommandHandler("menu", menu))
+    dp.add_handler(CommandHandler("aiprompt", aiprompt))
 
 # Register slash commands so Telegram shows them when typing /
 updater.bot.set_my_commands([
