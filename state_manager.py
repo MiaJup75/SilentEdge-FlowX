@@ -73,3 +73,22 @@ def get_status_report():
         f"📈 Daily Limit: {state['daily_limit']}\n"
         f"🔄 Trades Today: {state['trades_today']}"
     )
+
+# === Compatibility for trade count (used in main.py) ===
+def check_and_increment_trade_count():
+    state = load_state()
+    today = datetime.utcnow().strftime("%Y-%m-%d")
+    if state.get("last_reset") != today:
+        state["last_reset"] = today
+        state["trades_today"] = 1
+    else:
+        state["trades_today"] += 1
+    save_state(state)
+    return state["trades_today"]
+
+def get_trade_count():
+    state = load_state()
+    today = datetime.utcnow().strftime("%Y-%m-%d")
+    if state.get("last_reset") != today:
+        return 0
+    return state.get("trades_today", 0)
