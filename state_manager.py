@@ -92,3 +92,10 @@ def get_trade_count():
     if state.get("last_reset") != today:
         return 0
     return state.get("trades_today", 0)
+
+# === Reset Trade Count (Manual override) ===
+def reset_trade_count():
+    state = load_state()
+    state["trades_today"] = 0
+    state["last_reset"] = datetime.utcnow().strftime("%Y-%m-%d")
+    save_state(state)
