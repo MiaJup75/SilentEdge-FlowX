@@ -30,19 +30,3 @@ def send_daily_pnl_summary(context):
 
     except Exception as e:
         print(f"❌ Failed to send PnL report: {e}")
-
-# === Scheduler Hook (main.py) ===
-# In main.py > after dispatcher setup:
-from apscheduler.schedulers.background import BackgroundScheduler
-from utils.reporting import send_daily_pnl_summary
-
-scheduler = BackgroundScheduler()
-scheduler.add_job(
-    send_daily_pnl_summary,
-    'cron',
-    hour=9,
-    minute=0,
-    timezone='Asia/Bangkok',
-    args=[updater.job_queue]
-)
-scheduler.start()
