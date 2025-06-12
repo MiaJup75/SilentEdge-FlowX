@@ -122,7 +122,7 @@ def button(update: Update, context: CallbackContext):
         elif action == "menu":
             query.edit_message_text(
                 text="📋 Main Menu:",
-                reply_markup=get_main_menu(),
+                reply_markup=get_main_menu(is_live=LIVE_MODE, trade_limit=TRADE_AMOUNT_USDC),
                 parse_mode=ParseMode.HTML
             )
 
@@ -259,7 +259,7 @@ def menu(update: Update, context: CallbackContext):
         update.message.reply_text("⏳ Loading menu...")
         update.message.reply_text(
             "📋 Main Menu:",
-            reply_markup=get_main_menu(),
+            reply_markup=get_main_menu(is_live=LIVE_MODE, trade_limit=TRADE_AMOUNT_USDC),
             parse_mode=ParseMode.HTML
         )
     except Exception as e:
