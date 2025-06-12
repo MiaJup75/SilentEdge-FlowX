@@ -268,14 +268,12 @@ def aiprompt(update: Update, context: CallbackContext):
             parse_mode=ParseMode.HTML
         )
 
-  # === Bot Launcher ===
+ # === Bot Launcher ===
 def main():
     if not TELEGRAM_TOKEN:
         logger.error("❌ TELEGRAM_TOKEN missing. Cannot start bot.")
         return
 
-from telegram.ext import Updater, CommandHandler, CallbackQueryHandler
-    
     logger.info("🚀 Starting Flow X Bot...")
     updater = Updater(token=TELEGRAM_TOKEN, use_context=True)
     dp = updater.dispatcher
@@ -303,7 +301,7 @@ from telegram.ext import Updater, CommandHandler, CallbackQueryHandler
         webhook_url=f"{WEBHOOK_URL}/{TELEGRAM_TOKEN}"
     )
 
-   # Slash command handlers
+    # Slash command handlers
     dp.add_handler(CommandHandler("start", start))
     dp.add_handler(CommandHandler("buy", buy))
     dp.add_handler(CommandHandler("sell", sell))
@@ -314,16 +312,17 @@ from telegram.ext import Updater, CommandHandler, CallbackQueryHandler
     dp.add_handler(CommandHandler("menu", menu))
     dp.add_handler(CommandHandler("aiprompt", aiprompt))
 
-# Callback button handler
-dp.add_handler(CallbackQueryHandler(button))
+    # Callback button handler
+    dp.add_handler(CallbackQueryHandler(button))
 
-# Optional message fallback
-dp.add_handler(MessageHandler(Filters.text & ~Filters.command, fallback_message))
+    # Optional message fallback
+    dp.add_handler(MessageHandler(Filters.text & ~Filters.command, fallback_message))
 
-# Start polling
-updater.start_polling()
-logger.info("✅ Flow X Bot is live and listening...")
-updater.idle()
+    # Start polling
+    updater.start_polling()
+    logger.info("✅ Flow X Bot is live and listening...")
+    updater.idle()
+
 
 # === Fallback Text Response ===
 def fallback_message(update: Update, context: CallbackContext):
