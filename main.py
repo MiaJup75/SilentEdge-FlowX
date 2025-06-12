@@ -1,6 +1,9 @@
 import os
 import logging
 import traceback
+
+TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
+
 from telegram import (
     Update, InlineKeyboardButton, InlineKeyboardMarkup, ParseMode, Message
 )
