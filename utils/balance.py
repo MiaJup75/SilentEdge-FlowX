@@ -78,4 +78,4 @@ def get_wallet_balance(wallet_address: str) -> tuple:
         )
 
     balance_message = "\n".join(display_lines)
-    return balances, balance
+    return balances, balance_message
