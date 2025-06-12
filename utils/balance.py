@@ -21,25 +21,26 @@ TOKEN_EMOJIS = {
 }
 
 SOLANA_RPC_URL = "https://api.mainnet-beta.solana.com"
-DEXSCREENER_URL = "https://api.dexscreener.com/latest/dex/pairs/solana"
+DEXSCREENER_URL = "https://api.dexscreener.com/latest/dex/tokens"
+
 client = Client(SOLANA_RPC_URL)
+
 
 def fetch_price(mint: str) -> float:
     try:
-        url = f"{DEXSCREENER_URL}/{mint}"
-        response = requests.get(url, timeout=5)
+        response = requests.get(f"{DEXSCREENER_URL}/{mint}", timeout=10)
         data = response.json()
-        price = float(data["pair"]["priceUsd"])
+        price = float(data["pairs"][0]["priceUsd"])
         return price
     except Exception as e:
         print(f"❌ Error fetching price for {mint}: {e}")
         return 0.0
 
+
 def get_wallet_balance(wallet_address: str) -> tuple:
     balances = {}
     pubkey = PublicKey(wallet_address)
 
-    # === Token Balances ===
     for symbol, mint in TOKEN_MINTS.items():
         try:
             if symbol == "SOL":
@@ -49,13 +50,15 @@ def get_wallet_balance(wallet_address: str) -> tuple:
                 ata = get_associated_token_address(pubkey, PublicKey(mint))
                 token_info = client.get_token_account_balance(ata)
                 amount = float(token_info.get("result", {}).get("value", {}).get("uiAmount", 0))
+
             price = fetch_price(mint)
             balances[symbol] = {"amount": amount, "usd": round(amount * price, 2)}
+
         except Exception as e:
             print(f"⚠️ Error fetching {symbol}: {e}")
             balances[symbol] = {"amount": 0.0, "usd": 0.0}
 
-    # === UX Format ===
+    # UX Display
     total_usd = sum(token["usd"] for token in balances.values())
     display_lines = [f"💰 <b>Total Wallet Value:</b> ${round(total_usd, 2):,.2f}\n"]
 
@@ -66,5 +69,4 @@ def get_wallet_balance(wallet_address: str) -> tuple:
             f"{emoji} <b>{symbol}</b>: {data['amount']:.4f} ≈ ${data['usd']:.2f} ({percent:.1f}%)"
         )
 
-    balance_message = "\n".join(display_lines)
-    return balances, balance_message
+    return balances, "\n".join(display_lines)
