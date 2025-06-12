@@ -1,0 +1,75 @@
+import os
+import json
+from datetime import datetime
+
+STATE_FILE = "bot_state.json"
+
+# === Default State ===
+default_state = {
+    "paused": False,
+    "daily_limit": 10,
+    "trades_today": 0,
+    "last_reset": datetime.utcnow().strftime("%Y-%m-%d")
+}
+
+# === Load or Create State ===
+def load_state():
+    if not os.path.exists(STATE_FILE):
+        save_state(default_state)
+        return default_state
+
+    with open(STATE_FILE, "r") as f:
+        state = json.load(f)
+
+    # Reset daily trades if date changed
+    today = datetime.utcnow().strftime("%Y-%m-%d")
+    if state.get("last_reset") != today:
+        state["trades_today"] = 0
+        state["last_reset"] = today
+        save_state(state)
+
+    return state
+
+# === Save State ===
+def save_state(state):
+    with open(STATE_FILE, "w") as f:
+        json.dump(state, f)
+
+# === Check If Trading Paused ===
+def is_paused():
+    state = load_state()
+    return state.get("paused", False)
+
+# === Toggle Pause ===
+def toggle_pause():
+    state = load_state()
+    state["paused"] = not state["paused"]
+    save_state(state)
+    return state["paused"]
+
+# === Check Trade Limit ===
+def trade_limit_reached():
+    state = load_state()
+    return state["trades_today"] >= state.get("daily_limit", 10)
+
+# === Increment Trade Count ===
+def record_trade():
+    state = load_state()
+    state["trades_today"] += 1
+    save_state(state)
+
+# === Set Daily Limit ===
+def set_daily_limit(limit):
+    state = load_state()
+    state["daily_limit"] = limit
+    save_state(state)
+
+# === Get Status Report ===
+def get_status_report():
+    state = load_state()
+    return (
+        f"📊 <b>Bot Status</b>\n"
+        f"⛔ Paused: {'Yes' if state['paused'] else 'No'}\n"
+        f"📈 Daily Limit: {state['daily_limit']}\n"
+        f"🔄 Trades Today: {state['trades_today']}"
+    )
