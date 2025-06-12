@@ -14,7 +14,6 @@ from utils.trade import execute_jupiter_trade
 from utils.balance import get_wallet_balance
 from utils.format import (
     format_trade_result,
-    format_balance_text,
     format_error_message,
     format_help_text,
     format_debug_info
@@ -177,7 +176,7 @@ def balance(update: Update, context: CallbackContext):
     except Exception as e:
         logger.error(f"/balance error: {e}")
         update.message.reply_text(
-            format_error_message("❌ Balance check failed."),
+            format_error_message(f"❌ Format Error\n<code>{e}</code>"),
             parse_mode=ParseMode.HTML
         )
 
