@@ -39,12 +39,15 @@ OWNER_ID = int(os.getenv("OWNER_ID", "0"))
 
 # === Load Wallet ===
 wallet_address = "8xfd61QP7PA2zkeazJvTCYCwLj9eMqodZ1uUW19SEoL6"
-wallet = wallet_address  # for compatibility with rest of code
+wallet = wallet_address  # compatibility alias
 
-print("🧠 Wallet Address:", wallet_address)
-
-balance = get_wallet_balance(wallet_address)
-print("💰 Wallet Balance:", balance)
+try:
+    balance = get_wallet_balance(wallet_address)
+    print("🧠 Wallet Address:", wallet_address)
+    print("💰 Wallet Balance:", balance)
+except Exception as e:
+    logger.warning(f"Could not fetch balance: {e}")
+    balance = {}
 
 # === Start Command ===
 def start(update: Update, context: CallbackContext):
@@ -53,11 +56,11 @@ def start(update: Update, context: CallbackContext):
     logger.info(f"/start used by {user.username or user.id}")
 
     welcome = (
-        f"<b>👋 Welcome to Flow X Bot</b>\n\n"
+        "🚀 <b>Welcome to Flow X Bot</b>\n\n"
         f"<b>Wallet:</b> <code>{wallet_address}</code>\n"
-        f"<b>Mode:</b> {'✅ <b>LIVE</b>' if LIVE_MODE else '⚠️ <b>SIMULATED</b>'}\n"
-        f"<b>Trade Amount:</b> ${TRADE_AMOUNT_USDC:.2f}\n\n"
-        f"Use the menu below to get started. 🔽"
+        f"<b>Mode:</b> {'✅ <b>LIVE</b>' if LIVE_MODE else '🧪 <b>SIMULATED</b>'}\n"
+        f"<b>Trade Size:</b> ${TRADE_AMOUNT_USDC:.2f}\n\n"
+        "Tap a button or type a command to begin. ⬇️"
     )
 
     context.bot.send_message(
@@ -65,8 +68,7 @@ def start(update: Update, context: CallbackContext):
         text=welcome,
         parse_mode=ParseMode.HTML
     )
-
-    # Pin the welcome message
+        # Pin the welcome message
     try:
         pin_welcome_message(context.bot, chat_id)
     except Exception as e:
@@ -83,6 +85,7 @@ def button(update: Update, context: CallbackContext):
 
     try:
         if action in ["buy", "sell"]:
+            query.edit_message_text("⏳ Executing trade...")
             result = execute_jupiter_trade(wallet, action.upper(), TRADE_AMOUNT_USDC, LIVE_MODE)
             query.edit_message_text(
                 text=format_trade_result(result),
@@ -90,6 +93,7 @@ def button(update: Update, context: CallbackContext):
             )
 
         elif action == "balance":
+            query.edit_message_text("⏳ Fetching balance...")
             balances, balance_text = get_wallet_balance(get_wallet_address(wallet))
             query.edit_message_text(
                 text=balance_text,
@@ -123,20 +127,20 @@ def button(update: Update, context: CallbackContext):
 
         else:
             query.edit_message_text(
-                text="⚠️ Unknown action.",
+                text="⚠️ Unknown action selected.",
                 parse_mode=ParseMode.HTML
             )
 
     except Exception as e:
         logger.error(f"[button] {e}\n{traceback.format_exc()}")
         query.edit_message_text(
-            text=format_error_message("Something went wrong. Try again."),
+            text=format_error_message("❌ Something went wrong. Try again."),
             parse_mode=ParseMode.HTML
         )
-
-  # === /buy Command ===
+        # === /buy Command ===
 def buy(update: Update, context: CallbackContext):
     try:
+        update.message.reply_text("⏳ Executing buy trade...")
         result = execute_jupiter_trade(wallet, "BUY", TRADE_AMOUNT_USDC, LIVE_MODE)
         update.message.reply_text(
             format_trade_result(result),
@@ -152,6 +156,7 @@ def buy(update: Update, context: CallbackContext):
 # === /sell Command ===
 def sell(update: Update, context: CallbackContext):
     try:
+        update.message.reply_text("⏳ Executing sell trade...")
         result = execute_jupiter_trade(wallet, "SELL", TRADE_AMOUNT_USDC, LIVE_MODE)
         update.message.reply_text(
             format_trade_result(result),
@@ -167,8 +172,8 @@ def sell(update: Update, context: CallbackContext):
 # === /balance Command ===
 def balance(update: Update, context: CallbackContext):
     try:
+        update.message.reply_text("⏳ Fetching balance...")
         balances, balance_text = get_wallet_balance(wallet_address)
-
         update.message.reply_text(
             balance_text,
             parse_mode=ParseMode.HTML
@@ -183,6 +188,7 @@ def balance(update: Update, context: CallbackContext):
 # === /ping Command ===
 def ping(update: Update, context: CallbackContext):
     try:
+        update.message.reply_text("⏳ Checking Jupiter status...")
         ping_text = check_jupiter_health()
         update.message.reply_text(
             ping_text,
@@ -198,6 +204,7 @@ def ping(update: Update, context: CallbackContext):
 # === /help Command ===
 def help_cmd(update: Update, context: CallbackContext):
     try:
+        update.message.reply_text("⏳ Loading help menu...")
         help_text = format_help_text()
         update.message.reply_text(
             help_text,
@@ -209,10 +216,10 @@ def help_cmd(update: Update, context: CallbackContext):
             format_error_message("❌ Help unavailable."),
             parse_mode=ParseMode.HTML
         )
-
-# === /debug Command ===
+        # === /debug Command ===
 def debug(update: Update, context: CallbackContext):
     try:
+        update.message.reply_text("⏳ Gathering debug info...")
         debug_text = format_debug_info(get_wallet_address(wallet), LIVE_MODE, TRADE_AMOUNT_USDC)
         update.message.reply_text(
             debug_text,
@@ -228,6 +235,7 @@ def debug(update: Update, context: CallbackContext):
 # === /menu Command ===
 def menu(update: Update, context: CallbackContext):
     try:
+        update.message.reply_text("⏳ Loading menu...")
         update.message.reply_text(
             "📋 Main Menu:",
             reply_markup=get_main_menu(),
@@ -236,7 +244,8 @@ def menu(update: Update, context: CallbackContext):
     except Exception as e:
         logger.error(f"/menu error: {e}")
         update.message.reply_text(
-            "⚠️ Menu load failed."
+            format_error_message("⚠️ Menu load failed."),
+            parse_mode=ParseMode.HTML
         )
 
 # === /aiprompt Command ===
@@ -252,6 +261,7 @@ def aiprompt(update: Update, context: CallbackContext):
         return
 
     try:
+        update.message.reply_text("⏳ Asking ChatGPT...")
         response = ask_chatgpt(prompt)
         update.message.reply_text(
             f"🤖 <b>ChatGPT:</b>\n{response}",
@@ -263,8 +273,7 @@ def aiprompt(update: Update, context: CallbackContext):
             format_error_message("❌ ChatGPT failed."),
             parse_mode=ParseMode.HTML
         )
-
- # === Bot Launcher ===
+        # === Bot Launcher ===
 def main():
     if not TELEGRAM_TOKEN:
         logger.error("❌ TELEGRAM_TOKEN missing. Cannot start bot.")
@@ -274,7 +283,7 @@ def main():
     updater = Updater(token=TELEGRAM_TOKEN, use_context=True)
     dp = updater.dispatcher
 
-    # Register slash commands so Telegram shows them when typing /
+    # Register slash commands for Telegram interface
     updater.bot.set_my_commands([
         ("start", "Launch bot"),
         ("buy", "Simulate Buy"),
@@ -297,7 +306,7 @@ def main():
         webhook_url=f"{WEBHOOK_URL}/{TELEGRAM_TOKEN}"
     )
 
-    # Slash command handlers
+    # Register command handlers
     dp.add_handler(CommandHandler("start", start))
     dp.add_handler(CommandHandler("buy", buy))
     dp.add_handler(CommandHandler("sell", sell))
@@ -308,17 +317,16 @@ def main():
     dp.add_handler(CommandHandler("menu", menu))
     dp.add_handler(CommandHandler("aiprompt", aiprompt))
 
-    # Callback button handler
+    # Handle inline button callbacks
     dp.add_handler(CallbackQueryHandler(button))
 
-    # Optional message fallback
+    # Catch-all for non-command messages
     dp.add_handler(MessageHandler(Filters.text & ~Filters.command, fallback_message))
 
-    # Start polling
+    # Start the bot
     updater.start_polling()
     logger.info("✅ Flow X Bot is live and listening...")
     updater.idle()
-
 
 # === Fallback Text Response ===
 def fallback_message(update: Update, context: CallbackContext):
