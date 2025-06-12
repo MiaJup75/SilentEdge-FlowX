@@ -48,6 +48,11 @@ OWNER_ID = int(os.getenv("OWNER_ID", "0"))
 wallet_address = "8xfd61QP7PA2zkeazJvTCYCwLj9eMqodZ1uUW19SEoL6"
 wallet = wallet_address  # compatibility alias
 
+# === Bot State Flags ===
+bot_paused = False
+daily_trade_limit = 20
+trades_today = 0
+
 try:
     balance = get_wallet_balance(wallet_address)
     print("🧠 Wallet Address:", wallet_address)
