@@ -459,6 +459,16 @@ if __name__ == '__main__':
         time=datetime.time(hour=9, minute=0, tzinfo=bkk_tz)
     )
 
-    updater.start_polling()
-    logging.info("✅ Flow X Bot is live and listening...")
+    # Start via webhook (instead of polling)
+    PORT = int(os.environ.get("PORT", "8443"))
+    RENDER_EXTERNAL_HOSTNAME = os.environ.get("RENDER_EXTERNAL_HOSTNAME")
+
+    updater.start_webhook(
+        listen="0.0.0.0",
+        port=PORT,
+        url_path=TELEGRAM_TOKEN,
+        webhook_url=f"https://{RENDER_EXTERNAL_HOSTNAME}/{TELEGRAM_TOKEN}"
+    )
+
+    logging.info("✅ Flow X Bot is live and listening via webhook...")
     updater.idle()
