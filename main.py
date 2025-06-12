@@ -417,10 +417,10 @@ def main():
     dp.add_handler(CommandHandler("limit", limit))
 
     # Handle inline button callbacks
-dp.add_handler(CallbackQueryHandler(button))
+    dp.add_handler(CallbackQueryHandler(button))
 
-# Catch-all for non-command messages
-dp.add_handler(MessageHandler(Filters.text & ~Filters.command, fallback_message))
+    # Catch-all for non-command messages
+    dp.add_handler(MessageHandler(Filters.text & ~Filters.command, fallback_message))
 
 # === Scheduler: Daily 9AM Report ===
 from apscheduler.schedulers.background import BackgroundScheduler
