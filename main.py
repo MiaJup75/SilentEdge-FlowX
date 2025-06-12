@@ -376,25 +376,25 @@ def main():
     dp.add_handler(CommandHandler("limit", limit))
 
     # Handle inline button callbacks
-    dp.add_handler(CallbackQueryHandler(button))
+dp.add_handler(CallbackQueryHandler(button))
 
-    # Catch-all for non-command messages
-    dp.add_handler(MessageHandler(Filters.text & ~Filters.command, fallback_message))
+# Catch-all for non-command messages
+dp.add_handler(MessageHandler(Filters.text & ~Filters.command, fallback_message))
 
-    from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.schedulers.background import BackgroundScheduler
 import pytz
 from datetime import time
 
-    # Setup daily report scheduler
-    bkk_tz = pytz.timezone("Asia/Bangkok")
-    scheduler = BackgroundScheduler(timezone=bkk_tz)
-    scheduler.add_job(send_daily_pnl_summary, trigger='cron', hour=9, minute=0)
-    scheduler.start()
+# Setup daily report scheduler
+bkk_tz = pytz.timezone("Asia/Bangkok")
+scheduler = BackgroundScheduler(timezone=bkk_tz)
+scheduler.add_job(send_daily_pnl_summary, trigger='cron', hour=9, minute=0)
+scheduler.start()
 
-    # Start the bot
-    updater.start_polling()
-    logger.info("✅ Flow X Bot is live and listening...")
-    updater.idle()
+# Start the bot
+updater.start_polling()
+logger.info("✅ Flow X Bot is live and listening...")
+updater.idle()
 
 
 # === Fallback Text Response ===
