@@ -461,14 +461,14 @@ if __name__ == '__main__':
 
     # Start via webhook (instead of polling)
     PORT = int(os.environ.get("PORT", "8443"))
-WEBHOOK_URL = os.environ.get("RENDER_EXTERNAL_HOSTNAME")
+    WEBHOOK_URL = os.environ.get("RENDER_EXTERNAL_HOSTNAME")
 
-updater.start_webhook(
-    listen="0.0.0.0",
-    port=PORT,
-    url_path=TELEGRAM_TOKEN,
-    webhook_url=f"{WEBHOOK_URL}:443/{TELEGRAM_TOKEN}"
-)
+    updater.start_webhook(
+        listen="0.0.0.0",
+        port=PORT,
+        url_path=TELEGRAM_TOKEN,
+        webhook_url=f"{WEBHOOK_URL}/{TELEGRAM_TOKEN}"
+    )
 
-logging.info("✅ Flow X Bot is live and listening via webhook...")
-updater.idle()
+    logging.info("✅ Flow X Bot is live and listening via webhook...")
+    updater.idle()
