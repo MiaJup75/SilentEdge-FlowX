@@ -114,6 +114,13 @@ def button(update: Update, context: CallbackContext):
                 parse_mode=ParseMode.HTML
             )
 
+        elif data == "pnl":
+            _, message = calculate_daily_pnl("today")
+            query.edit_message_text(
+                message,
+                parse_mode=ParseMode.HTML
+            )
+
         elif action == "help":
             query.edit_message_text(
                 text=format_help_text(),
