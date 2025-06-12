@@ -467,7 +467,7 @@ updater.start_webhook(
     listen="0.0.0.0",
     port=PORT,
     url_path=TELEGRAM_TOKEN,
-    webhook_url=f"{WEBHOOK_URL}/{TELEGRAM_TOKEN}"
+    webhook_url=f"{WEBHOOK_URL}:443/{TELEGRAM_TOKEN}"
 )
 
 logging.info("✅ Flow X Bot is live and listening via webhook...")
