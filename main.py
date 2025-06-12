@@ -21,6 +21,7 @@ from utils.format import (
 )
 from utils.ping import check_jupiter_health
 from utils.gpt import ask_chatgpt
+from utils.reporting import send_daily_pnl_summary
 from utils.menu import get_main_menu
 from utils.pin import pin_welcome_message
 from state_manager import (
@@ -379,6 +380,16 @@ def main():
 
     # Catch-all for non-command messages
     dp.add_handler(MessageHandler(Filters.text & ~Filters.command, fallback_message))
+
+    from apscheduler.schedulers.background import BackgroundScheduler
+import pytz
+from datetime import time
+
+    # Setup daily report scheduler
+    bkk_tz = pytz.timezone("Asia/Bangkok")
+    scheduler = BackgroundScheduler(timezone=bkk_tz)
+    scheduler.add_job(send_daily_pnl_summary, trigger='cron', hour=9, minute=0)
+    scheduler.start()
 
     # Start the bot
     updater.start_polling()
