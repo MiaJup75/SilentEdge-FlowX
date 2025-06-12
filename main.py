@@ -23,6 +23,13 @@ from utils.ping import check_jupiter_health
 from utils.gpt import ask_chatgpt
 from utils.menu import get_main_menu
 from utils.pin import pin_welcome_message
+from state_manager import (
+    is_paused,
+    check_and_increment_trade_count,
+    reset_trade_count,
+    set_pause,
+    set_limit
+)
 
 # === Logger ===
 logging.basicConfig(
@@ -137,9 +144,16 @@ def button(update: Update, context: CallbackContext):
             text=format_error_message("❌ Something went wrong. Try again."),
             parse_mode=ParseMode.HTML
         )
-# === /buy Command ===
 def buy(update: Update, context: CallbackContext):
     try:
+        # === Trade Guard ===
+        if is_paused():
+            update.message.reply_text("⛔ Trading is currently paused.")
+            return
+        if not check_and_increment_trade_count():
+            update.message.reply_text("⚠️ Daily trade limit reached.")
+            return
+
         update.message.reply_text("⏳ Executing buy trade...")
         result = execute_jupiter_trade(wallet, "BUY", TRADE_AMOUNT_USDC, LIVE_MODE)
         update.message.reply_text(
@@ -153,9 +167,16 @@ def buy(update: Update, context: CallbackContext):
             parse_mode=ParseMode.HTML
         )
 
-# === /sell Command ===
 def sell(update: Update, context: CallbackContext):
     try:
+        # === Trade Guard ===
+        if is_paused():
+            update.message.reply_text("⛔ Trading is currently paused.")
+            return
+        if not check_and_increment_trade_count():
+            update.message.reply_text("⚠️ Daily trade limit reached.")
+            return
+
         update.message.reply_text("⏳ Executing sell trade...")
         result = execute_jupiter_trade(wallet, "SELL", TRADE_AMOUNT_USDC, LIVE_MODE)
         update.message.reply_text(
@@ -274,6 +295,35 @@ def aiprompt(update: Update, context: CallbackContext):
             parse_mode=ParseMode.HTML
         )
 
+def pause(update: Update, context: CallbackContext):
+    user_id = update.effective_user.id
+    if OWNER_ID and user_id != OWNER_ID:
+        update.message.reply_text("⛔ Access denied.")
+        return
+
+    current = is_paused()
+    set_pause(not current)
+    update.message.reply_text(
+        f"{'⏸️ Trading paused.' if not current else '▶️ Trading resumed.'}"
+    )
+    
+def limit(update: Update, context: CallbackContext):
+    user_id = update.effective_user.id
+    if OWNER_ID and user_id != OWNER_ID:
+        update.message.reply_text("⛔ Access denied.")
+        return
+
+    if not context.args:
+        update.message.reply_text("🧮 Usage: /limit <number>")
+        return
+
+    try:
+        limit_value = int(context.args[0])
+        set_limit(limit_value)
+        update.message.reply_text(f"📉 Daily trade limit set to {limit_value}")
+    except ValueError:
+        update.message.reply_text("⚠️ Please enter a valid number.")
+
 # === Bot Launcher ===
 def main():
     if not TELEGRAM_TOKEN:
@@ -316,6 +366,8 @@ def main():
     dp.add_handler(CommandHandler("debug", debug))
     dp.add_handler(CommandHandler("menu", menu))
     dp.add_handler(CommandHandler("aiprompt", aiprompt))
+    dp.add_handler(CommandHandler("pause", pause))
+    dp.add_handler(CommandHandler("limit", limit))
 
     # Handle inline button callbacks
     dp.add_handler(CallbackQueryHandler(button))
