@@ -22,7 +22,7 @@ TOKEN_EMOJIS = {
 }
 
 # === Setup ===
-SOLANA_RPC_URL = "https://api.mainnet-beta.solana.com"
+SOLANA_RPC_URL = os.getenv("SOLANA_RPC_URL", "https://api.mainnet-beta.solana.com")
 client = Client(SOLANA_RPC_URL)
 
 # === Price Fetching ===
