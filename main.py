@@ -168,10 +168,7 @@ def sell(update: Update, context: CallbackContext):
 # === /balance Command ===
 def balance(update: Update, context: CallbackContext):
     try:
-        from utils.format_balance import format_balance_message  # make sure this import is at the top
-
-        balances = get_wallet_balance(wallet_address)
-        msg = format_balance_message(balances)
+        balances, msg = get_wallet_balance(wallet_address)
 
         update.message.reply_text(
             msg,
