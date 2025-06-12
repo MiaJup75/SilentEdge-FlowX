@@ -2,7 +2,7 @@ import sqlite3
 from datetime import datetime, timedelta
 import os
 
-DB_PATH = "trades.db"  # You can change path if needed
+DB_PATH = "trades.db"  # Update this path if your database is elsewhere
 
 def log_trade(side, amount, price, status, tx_hash):
     conn = sqlite3.connect(DB_PATH)
@@ -54,10 +54,11 @@ def calculate_daily_pnl(day="today"):
     total_buy = 0
     total_sell = 0
     for side, amount, price in rows:
-        if side == "BUY":
-            total_buy += amount * (price or 0)
-        elif side == "SELL":
-            total_sell += amount * (price or 0)
+        price = price or 0  # fallback
+        if side.upper() == "BUY":
+            total_buy += amount * price
+        elif side.upper() == "SELL":
+            total_sell += amount * price
 
     trades_count = len(rows)
     pnl = round(total_sell - total_buy, 2)
