@@ -12,6 +12,7 @@ from telegram.ext import (
 from utils.wallet import load_wallet, get_wallet_address
 from utils.trade import execute_jupiter_trade
 from utils.balance import get_wallet_balance
+from utils.pnl import calculate_daily_pnl
 from utils.format import (
     format_trade_result,
     format_balance_text,
@@ -275,6 +276,27 @@ def menu(update: Update, context: CallbackContext):
             parse_mode=ParseMode.HTML
         )
 
+# === /pnl Command ===
+def pnl(update: Update, context: CallbackContext):
+    try:
+        arg = context.args[0].lower() if context.args else "today"
+        if arg not in ["today", "yesterday", "alltime"]:
+            update.message.reply_text("❗ Use /pnl [today|yesterday|alltime]")
+            return
+
+        update.message.reply_text("⏳ Calculating PnL...")
+        report = calculate_daily_pnl(arg)
+        update.message.reply_text(
+            report,
+            parse_mode=ParseMode.HTML
+        )
+    except Exception as e:
+        logger.error(f"/pnl error: {e}")
+        update.message.reply_text(
+            format_error_message("❌ Failed to generate PnL."),
+            parse_mode=ParseMode.HTML
+        )
+
 # === /aiprompt Command ===
 def aiprompt(update: Update, context: CallbackContext):
     user_id = update.effective_user.id
@@ -346,6 +368,7 @@ def main():
         ("buy", "Simulate Buy"),
         ("sell", "Simulate Sell"),
         ("balance", "Wallet Balance"),
+        ("pnl", "PnL Summary")
         ("ping", "Jupiter Check"),
         ("help", "Help Menu"),
         ("debug", "Bot Status"),
@@ -367,6 +390,7 @@ def main():
     dp.add_handler(CommandHandler("buy", buy))
     dp.add_handler(CommandHandler("sell", sell))
     dp.add_handler(CommandHandler("balance", balance))
+    dp.add_handler(CommandHandler("pnl", pnl))
     dp.add_handler(CommandHandler("ping", ping))
     dp.add_handler(CommandHandler("help", help_cmd))
     dp.add_handler(CommandHandler("debug", debug))
