@@ -91,9 +91,9 @@ def button(update: Update, context: CallbackContext):
             )
 
         elif action == "balance":
-            bal = get_wallet_balance(get_wallet_address(wallet))
+            balances, balance_text = get_wallet_balance(get_wallet_address(wallet))
             query.edit_message_text(
-                text=format_balance_text(bal),
+                text=balance_text,
                 parse_mode=ParseMode.HTML
             )
 
