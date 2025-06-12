@@ -405,25 +405,25 @@ def main():
         url_path=TELEGRAM_TOKEN,
         webhook_url=f"{WEBHOOK_URL}/{TELEGRAM_TOKEN}"
     )
-        # Register command handlers
-    dp.add_handler(CommandHandler("start", start))
-    dp.add_handler(CommandHandler("buy", buy))
-    dp.add_handler(CommandHandler("sell", sell))
-    dp.add_handler(CommandHandler("balance", balance))
-    dp.add_handler(CommandHandler("pnl", pnl))
-    dp.add_handler(CommandHandler("ping", ping))
-    dp.add_handler(CommandHandler("help", help_cmd))
-    dp.add_handler(CommandHandler("debug", debug))
-    dp.add_handler(CommandHandler("menu", menu))
-    dp.add_handler(CommandHandler("aiprompt", aiprompt))
-    dp.add_handler(CommandHandler("pause", pause))
-    dp.add_handler(CommandHandler("limit", limit))
+           # Register command handlers
+    dispatcher.add_handler(CommandHandler("start", start))
+    dispatcher.add_handler(CommandHandler("buy", buy))
+    dispatcher.add_handler(CommandHandler("sell", sell))
+    dispatcher.add_handler(CommandHandler("balance", balance))
+    dispatcher.add_handler(CommandHandler("pnl", pnl))
+    dispatcher.add_handler(CommandHandler("ping", ping))
+    dispatcher.add_handler(CommandHandler("help", help_cmd))
+    dispatcher.add_handler(CommandHandler("debug", debug))
+    dispatcher.add_handler(CommandHandler("menu", menu))
+    dispatcher.add_handler(CommandHandler("aiprompt", aiprompt))
+    dispatcher.add_handler(CommandHandler("pause", pause))
+    dispatcher.add_handler(CommandHandler("limit", limit))
 
     # Handle inline button callbacks
-    dp.add_handler(CallbackQueryHandler(button))
+    dispatcher.add_handler(CallbackQueryHandler(button))
 
     # Catch-all for non-command messages
-    dp.add_handler(MessageHandler(Filters.text & ~Filters.command, fallback_message))
+    dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, fallback_message))
 
 # === Scheduler: Daily 9AM Report ===
 import os
