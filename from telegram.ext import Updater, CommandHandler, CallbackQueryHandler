@@ -274,6 +274,8 @@ def main():
         logger.error("❌ TELEGRAM_TOKEN missing. Cannot start bot.")
         return
 
+from telegram.ext import Updater, CommandHandler, CallbackQueryHandler
+    
     logger.info("🚀 Starting Flow X Bot...")
     updater = Updater(token=TELEGRAM_TOKEN, use_context=True)
     dp = updater.dispatcher
