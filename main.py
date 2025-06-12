@@ -427,15 +427,25 @@ import pytz
 import datetime
 from utils.reporting import send_daily_pnl_summary
 
-# Start the bot
-updater.start_polling()
-job_queue = updater.job_queue
-
 bkk_tz = pytz.timezone("Asia/Bangkok")
-job_queue.run_daily(
-    send_daily_pnl_summary,
-    time=datetime.time(hour=9, minute=0, tzinfo=bkk_tz)
-)
 
-logger.info("✅ Flow X Bot is live and listening...")
-updater.idle()
+def fallback_message(update: Update, context: CallbackContext):
+    update.message.reply_text(
+        "🤖 I didn’t understand that. Use /menu to get started.",
+        parse_mode=ParseMode.HTML
+    )
+
+if __name__ == '__main__':
+    updater = Updater(TOKEN, use_context=True)
+    dispatcher = updater.dispatcher
+    job_queue = updater.job_queue
+
+    # Daily 9AM Bangkok PnL summary
+    job_queue.run_daily(
+        send_daily_pnl_summary,
+        time=datetime.time(hour=9, minute=0, tzinfo=bkk_tz)
+    )
+
+    updater.start_polling()
+    logger.info("✅ Flow X Bot is live and listening...")
+    updater.idle()
