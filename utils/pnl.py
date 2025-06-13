@@ -5,7 +5,8 @@ from utils.charts import generate_pnl_chart
 
 DB_PATH = "trades.db"  # Update this path if your database is elsewhere
 
-def log_trade(side, amount, price, status, tx_hash):
+# === Enhanced Trade Logger with Win/Loss Calculation ===
+def log_trade(side, amount, price, status, tx_hash, result=None):
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
 
@@ -17,19 +18,21 @@ def log_trade(side, amount, price, status, tx_hash):
             price REAL,
             status TEXT,
             tx_hash TEXT,
+            result TEXT,
             timestamp TEXT NOT NULL
         )
     ''')
 
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     c.execute('''
-        INSERT INTO trades (side, amount, price, status, tx_hash, timestamp)
-        VALUES (?, ?, ?, ?, ?, ?)
-    ''', (side, amount, price, status, tx_hash, timestamp))
+        INSERT INTO trades (side, amount, price, status, tx_hash, result, timestamp)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+    ''', (side, amount, price, status, tx_hash, result, timestamp))
 
     conn.commit()
     conn.close()
 
+# === Dynamic Time Window PnL ===
 def calculate_daily_pnl(day="today"):
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
@@ -37,15 +40,20 @@ def calculate_daily_pnl(day="today"):
     now = datetime.now()
     if day == "today":
         start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        end = start + timedelta(days=1)
     elif day == "yesterday":
         start = (now - timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
+        end = start + timedelta(days=1)
+    elif day.endswith("d") and day[:-1].isdigit():
+        days = int(day[:-1])
+        start = now - timedelta(days=days)
+        end = now
     else:
         start = datetime.min
-
-    end = start + timedelta(days=1)
+        end = now
 
     c.execute('''
-        SELECT side, amount, price FROM trades
+        SELECT side, amount, price, result FROM trades
         WHERE timestamp BETWEEN ? AND ?
     ''', (start.strftime("%Y-%m-%d %H:%M:%S"), end.strftime("%Y-%m-%d %H:%M:%S")))
 
@@ -54,24 +62,35 @@ def calculate_daily_pnl(day="today"):
 
     total_buy = 0
     total_sell = 0
-    for side, amount, price in rows:
-        price = price or 0  # fallback
-        if side.upper() == "BUY":
-            total_buy += amount * price
-        elif side.upper() == "SELL":
-            total_sell += amount * price
+    win_count = 0
+    total_trades = 0
+    history = []
 
-    trades_count = len(rows)
-    pnl = round(total_sell - total_buy, 2)
-    win_rate = 100 if pnl >= 0 else 0  # placeholder logic
+    for side, amount, price, result in rows:
+        price = price or 0
+        pnl = amount * price
+
+        if side.upper() == "BUY":
+            total_buy += pnl
+            history.append(-pnl)
+        elif side.upper() == "SELL":
+            total_sell += pnl
+            history.append(pnl)
+            if result == "WIN":
+                win_count += 1
+        total_trades += 1
+
+    net_pnl = round(total_sell - total_buy, 2)
+    win_rate = round((win_count / total_trades) * 100, 2) if total_trades else 0
 
     return {
-        "trades": trades_count,
-        "net_pnl": pnl,
+        "trades": total_trades,
+        "net_pnl": net_pnl,
         "win_rate": win_rate,
-        "history": [pnl]  # expand to real history later
+        "history": history[-30:]
     }
 
+# === PnL Formatter ===
 def format_pnl_summary(pnl_data: dict) -> str:
     try:
         net = pnl_data.get("net_pnl", 0)
