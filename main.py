@@ -22,6 +22,7 @@ from utils.format import (
     format_help_text,
     format_debug_info
 )
+from utils.format import format_pnl_summary
 from utils.ping import check_jupiter_health
 from utils.gpt import ask_chatgpt
 from utils.reporting import send_daily_pnl_summary
