@@ -473,6 +473,10 @@ def main():
     dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, fallback_message))
 
 # === Scheduler: Daily 9AM Report ===
+job_queue.run_daily(
+    send_daily_pnl_summary,
+    time=datetime.time(hour=9, minute=0, tzinfo=bkk_tz)
+)
 import os
 import pytz
 import datetime
