@@ -28,10 +28,11 @@ client = Client(SOLANA_RPC_URL)
 # === Price Fetching ===
 def fetch_price(mint: str) -> float:
     try:
-        url = f"https://public-api.birdeye.so/defi/token_price?address={mint}"
+        url = f"https://api.dexscreener.com/latest/dex/tokens/{mint}"
         response = requests.get(url, timeout=5)
         data = response.json()
-        return float(data["data"]["value"])
+        price = float(data["pairs"][0]["priceUsd"])
+        return price
     except Exception as e:
         print(f"❌ Error fetching price for {mint}: {e}")
         return 0.0
