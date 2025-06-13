@@ -449,26 +449,4 @@ def fallback_message(update: Update, context: CallbackContext):
 
 # === Bot Startup ===
 if __name__ == '__main__':
-    updater = Updater(token=TELEGRAM_TOKEN, use_context=True)
-    dispatcher = updater.dispatcher
-    job_queue = updater.job_queue
-
-    # Schedule daily PnL report at 9AM
-    job_queue.run_daily(
-        send_daily_pnl_summary,
-        time=datetime.time(hour=9, minute=0, tzinfo=bkk_tz)
-    )
-
-    # Start via webhook (instead of polling)
-    PORT = int(os.environ.get("PORT", "8443"))
-    WEBHOOK_URL = os.environ.get("RENDER_EXTERNAL_HOSTNAME")
-
-    updater.start_webhook(
-        listen="0.0.0.0",
-        port=PORT,
-        url_path=TELEGRAM_TOKEN,
-        webhook_url=f"{WEBHOOK_URL}/{TELEGRAM_TOKEN}"
-    )
-
-    logging.info("✅ Flow X Bot is live and listening via webhook...")
-    updater.idle()
+    main()
