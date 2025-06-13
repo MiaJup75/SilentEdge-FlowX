@@ -5,7 +5,7 @@ import traceback
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 
 from telegram import (
-    Update, InlineKeyboardButton, InlineKeyboardMarkup, ParseMode, Message
+    Update, InlineKeyboardButton, InlineKeyboardMarkup, ParseMode, Message, InputMediaPhoto
 )
 from telegram.ext import (
     Updater, CommandHandler, CallbackQueryHandler,
@@ -26,6 +26,8 @@ from utils.format import (
 from utils.ping import check_jupiter_health
 from utils.gpt import ask_chatgpt
 from utils.reporting import send_daily_pnl_summary
+from utils.charts import generate_pnl_chart
+from utils.format import format_pnl_summary
 from utils.menu import get_main_menu
 from utils.pin import pin_welcome_message
 from state_manager import (
@@ -135,6 +137,24 @@ def button(update: Update, context: CallbackContext):
                 text=check_jupiter_health(),
                 parse_mode=ParseMode.HTML
             )
+        
+        elif action.startswith("pnl:"):
+            view = action.split(":")[1]
+            report = calculate_daily_pnl(view)
+            summary = format_pnl_summary(report)
+            chart_path = generate_pnl_chart(report["history"], view)
+
+            with open(chart_path, "rb") as img:
+                query.edit_message_media(
+                    media=InputMediaPhoto(media=img, caption=summary, parse_mode=ParseMode.HTML),
+                    reply_markup=InlineKeyboardMarkup([
+                        [
+                            InlineKeyboardButton("📅 Today", callback_data="pnl:today"),
+                            InlineKeyboardButton("🕘 Yesterday", callback_data="pnl:yesterday"),
+                            InlineKeyboardButton("📊 All Time", callback_data="pnl:alltime")
+                        ]
+                    ])
+                )
 
         elif action == "menu":
             query.edit_message_text(
@@ -304,12 +324,36 @@ def pnl(update: Update, context: CallbackContext):
             update.message.reply_text("❗ Use /pnl [today|yesterday|alltime]")
             return
 
-        update.message.reply_text("⏳ Calculating PnL...")
+        update.message.reply_text("⏳ Fetching PnL...")
+
         report = calculate_daily_pnl(arg)
+        summary = format_pnl_summary(report)
+
+        # Generate chart image
+        chart_path = generate_pnl_chart(report["history"], arg)
+
+        # Send image + summary
+        with open(chart_path, "rb") as img:
+            update.message.reply_photo(
+                photo=img,
+                caption=summary,
+                parse_mode=ParseMode.HTML,
+                reply_markup=InlineKeyboardMarkup([
+                    [
+                        InlineKeyboardButton("📅 Today", callback_data="pnl:today"),
+                        InlineKeyboardButton("🕘 Yesterday", callback_data="pnl:yesterday"),
+                        InlineKeyboardButton("📊 All Time", callback_data="pnl:alltime")
+                    ]
+                ])
+            )
+
+    except Exception as e:
+        logger.error(f"/pnl error: {e}")
         update.message.reply_text(
-            report,
+            format_error_message("❌ Failed to generate PnL."),
             parse_mode=ParseMode.HTML
         )
+
     except Exception as e:
         logger.error(f"/pnl error: {e}")
         update.message.reply_text(
@@ -418,6 +462,8 @@ def main():
     dispatcher.add_handler(CommandHandler("aiprompt", aiprompt))
     dispatcher.add_handler(CommandHandler("pause", pause))
     dispatcher.add_handler(CommandHandler("limit", limit))
+    dispatcher.add_handler(CommandHandler("pnl", pnl))
+    dispatcher.add_handler(CallbackQueryHandler(handle_pnl_button, pattern="^pnl_"))
 
     # Handle inline button callbacks
     dispatcher.add_handler(CallbackQueryHandler(button))
