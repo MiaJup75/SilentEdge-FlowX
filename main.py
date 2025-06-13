@@ -156,7 +156,7 @@ def button(update: Update, context: CallbackContext):
 
         elif action == "menu":
             query.edit_message_text(
-                text="📋 Main Menu:",
+                text="📅 Main Menu:",
                 reply_markup=get_main_menu(is_live=LIVE_MODE, trade_limit=TRADE_AMOUNT_USDC),
                 parse_mode=ParseMode.HTML
             )
