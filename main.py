@@ -14,7 +14,7 @@ from telegram.ext import (
 
 from utils.wallet import get_wallet_address
 from utils.trade import execute_jupiter_trade
-from utils.pnl import calculate_daily_pnl
+from utils.pnl import calculate_daily_pnl, calculate_auto_pnl
 from utils.format import (
     format_trade_result,
     format_balance_text,
@@ -121,9 +121,10 @@ def button(update: Update, context: CallbackContext):
             )
 
         elif data == "pnl":
-            _, message = calculate_daily_pnl("today")
+            report = calculate_auto_pnl()
+            summary = format_pnl_summary(report)
             query.edit_message_text(
-                message,
+                summary,
                 parse_mode=ParseMode.HTML
             )
 
