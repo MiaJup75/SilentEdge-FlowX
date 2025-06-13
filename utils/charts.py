@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 from datetime import datetime, timedelta
 import os
+import uuid
 
 DB_PATH = "trades.db"
 CHART_DIR = "charts"
@@ -120,3 +121,22 @@ def generate_pnl_bar_chart(days=7):
     plt.close()
 
     return path
+
+# ✅ This is the missing function for inline charts:
+def generate_pnl_chart(data, label="PnL"):
+    try:
+        filename = f"pnl_chart_{uuid.uuid4().hex}.png"
+        filepath = os.path.join("/tmp", filename)
+
+        plt.figure(figsize=(5, 2.5))
+        plt.plot(data, marker="o", linestyle="-", linewidth=2)
+        plt.title(f"{label.upper()} PnL Chart")
+        plt.grid(True)
+        plt.tight_layout()
+        plt.savefig(filepath)
+        plt.close()
+        return filepath
+
+    except Exception as e:
+        print(f"[Chart Error] {e}")
+        return None
