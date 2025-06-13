@@ -7,7 +7,7 @@ from spl.token.instructions import get_associated_token_address
 # === Token Definitions ===
 TOKEN_PAIRS = {
     "SOL": "6fXq9KzvGrF1xKmZYMeY6sYzU8qWZ8tMvtn5Zrk2LGNz",
-    "USDC": "6fXq9KzvGrF1xKmZYMeY6sYzU8qWZ8tMvtn5Zrk2LGNz",
+    "USDC": "4dFgdXHkG6KnM8JzBfdzqTSqFwRQpDsz6Tf26UnRwZTJ",
     "wBTC": "Dqj1fsnXvHU4W4kURHs9zKgyU9xq35zhtMTWkzXSttDp",
     "wETH": "67jSDkJejsFGmcm4dbopHyhz7Qac4VrF4XNoeapw4RkU",
     "wXRP": "7WPoKQK8dAzYiyPdJXejZdE4zqEdsoTw5ibMBXLsowwT"
