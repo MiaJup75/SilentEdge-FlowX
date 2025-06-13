@@ -50,7 +50,14 @@ Live Mode: {'✅' if live else '❌'}
 Trade Amount: {format_usd(trade_amt)}"""
 
 def format_pnl_summary(day, trades, total_buy, total_sell, net_pnl, win_rate):
-    emoji = "🔥" if net_pnl > 0 else "🧊" if net_pnl < 0 else "➖"
+    if net_pnl > 0 and win_rate > 70:
+        emoji = "🧠🚀"
+    elif net_pnl > 0:
+        emoji = "🟢📈"
+    elif net_pnl < 0:
+        emoji = "🔻💀"
+    else:
+        emoji = "⚪️"
     return f"""📅 <b>Performance Summary – {day.title()}</b>
 
 🔢 <b>Trades:</b> {trades}
@@ -61,16 +68,13 @@ def format_pnl_summary(day, trades, total_buy, total_sell, net_pnl, win_rate):
 """
 
 def get_pnl_buttons(active="today"):
-    options = [
-        ("📆 Today", "today"),
-        ("🕗 Yesterday", "yesterday"),
-        ("📊 7d", "7d"),
-        ("📅 30d", "30d"),
-        ("📈 All Time", "alltime")
-    ]
-    buttons = [InlineKeyboardButton(
-        f"{label} {'✅' if key == active else ''}",
-        callback_data=f"pnl:{key}"
-    ) for label, key in options]
+    def button(label, key):
+        prefix = "✅ " if key == active else ""
+        return InlineKeyboardButton(f"{prefix}{label}", callback_data=f"pnl:{key}")
 
-    return InlineKeyboardMarkup([buttons])
+    return InlineKeyboardMarkup([
+        [button("📆 Today", "today"), button("🕗 Yesterday", "yesterday")],
+        [button("📊 7d", "7d"), button("📅 30d", "30d")],
+        [button("📈 All Time", "alltime")],
+        [InlineKeyboardButton("🏠 Menu", callback_data="menu")]
+    ])
