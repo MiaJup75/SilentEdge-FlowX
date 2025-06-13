@@ -322,8 +322,11 @@ def pnl(update: Update, context: CallbackContext):
     try:
         # Determine time range
         arg = context.args[0].lower() if context.args else "auto"
-        valid = ["today", "yesterday", "7d", "30d"]
-        day = arg if arg in valid else "auto"
+        valid = ["today", "yesterday", "7d", "30d", "alltime"]
+        if arg not in valid:
+            update.message.reply_text("❗ Use /pnl [today|yesterday|7d|30d|alltime]")
+            return
+        day = arg
 
         # Pull PnL data
         report = calculate_auto_pnl() if day == "auto" else calculate_daily_pnl(day)
@@ -336,7 +339,16 @@ def pnl(update: Update, context: CallbackContext):
                 update.message.reply_photo(
                     photo=img,
                     caption=summary,
-                    parse_mode=ParseMode.HTML
+                    parse_mode=ParseMode.HTML,
+                    reply_markup=InlineKeyboardMarkup([
+                        [
+                            InlineKeyboardButton("📅 Today", callback_data="pnl:today"),
+                            InlineKeyboardButton("📆 Yesterday", callback_data="pnl:yesterday"),
+                            InlineKeyboardButton("7️⃣ 7D", callback_data="pnl:7d"),
+                            InlineKeyboardButton("📊 30D", callback_data="pnl:30d"),
+                            InlineKeyboardButton("🗓 All Time", callback_data="pnl:alltime")
+                        ]
+                    ])
                 )
         else:
             update.message.reply_text(
