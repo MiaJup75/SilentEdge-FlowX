@@ -2,7 +2,7 @@
 import sqlite3
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
-from datetime import datetime
+from datetime import datetime, timedelta
 import os
 
 DB_PATH = "trades.db"
@@ -72,4 +72,51 @@ def generate_trade_volume_chart():
     path = os.path.join(CHART_DIR, "volume_bar.png")
     plt.savefig(path)
     plt.close()
+    return path
+
+def generate_pnl_bar_chart(days=7):
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+
+    dates = []
+    pnls = []
+
+    for i in range(days - 1, -1, -1):
+        day = datetime.now() - timedelta(days=i)
+        start = day.replace(hour=0, minute=0, second=0, microsecond=0)
+        end = start + timedelta(days=1)
+
+        c.execute('''
+            SELECT side, amount, price FROM trades
+            WHERE timestamp BETWEEN ? AND ?
+        ''', (start.strftime("%Y-%m-%d %H:%M:%S"), end.strftime("%Y-%m-%d %H:%M:%S")))
+
+        rows = c.fetchall()
+        total_buy = sum(float(a) * float(p or 0) for s, a, p in rows if s.upper() == "BUY")
+        total_sell = sum(float(a) * float(p or 0) for s, a, p in rows if s.upper() == "SELL")
+        pnl = round(total_sell - total_buy, 2)
+
+        dates.append(day.strftime("%d %b"))
+        pnls.append(pnl)
+
+    conn.close()
+
+    fig, ax = plt.subplots(figsize=(8, 4))
+    bars = ax.bar(dates, pnls, color=["green" if p >= 0 else "red" for p in pnls])
+    ax.set_title("📊 7-Day PnL Overview")
+    ax.set_ylabel("Net PnL ($)")
+    ax.axhline(0, color='black', linewidth=0.8)
+    plt.xticks(rotation=45)
+
+    for bar, val in zip(bars, pnls):
+        height = bar.get_height()
+        ax.annotate(f"${val:.2f}", xy=(bar.get_x() + bar.get_width() / 2, height),
+                    xytext=(0, 3 if height >= 0 else -15),
+                    textcoords="offset points", ha='center', fontsize=8, color='black')
+
+    plt.tight_layout()
+    path = os.path.join(CHART_DIR, "pnl_bar.png")
+    plt.savefig(path)
+    plt.close()
+
     return path
