@@ -14,7 +14,7 @@ from telegram.ext import (
 
 from utils.wallet import load_wallet, get_wallet_address
 from utils.trade import execute_jupiter_trade
-from utils.balance import get_wallet_balance
+from utils.wallet import get_wallet_address
 from utils.pnl import calculate_daily_pnl
 from utils.format import (
     format_trade_result,
