@@ -1,7 +1,15 @@
+def format_usd(value: float) -> str:
+    """Format float as USD string, e.g. 1234.5 → '$1,234.50'"""
+    return f"${value:,.2f}"
+
+def format_amount(value: float) -> str:
+    """Format token amount with 4 decimals, e.g. 1.234567 → '1.2346'"""
+    return f"{value:,.4f}"
+
 def format_trade_result(result):
     return f"""<b>🟢 Trade Executed</b>
 Action: {result['side']}
-Amount: ${result['amount']}
+Amount: {format_usd(result['amount'])}
 Status: {result['status']}
 TX: <code>{result['tx_hash']}</code>"""
 
@@ -12,7 +20,7 @@ def format_balance_text(balances):
             amt = data.get("amount", 0)
             usd = data.get("usd", 0)
             emoji = "🟡" if amt == 0 else "🟢"
-            lines.append(f"{emoji} {symbol}: {amt:.4f} (${usd:,.2f})")
+            lines.append(f"{emoji} {symbol}: {format_amount(amt)} ({format_usd(usd)})")
         return "\n".join(lines)
     except Exception as e:
         return f"<b>❌ Format Error</b>\n{str(e)}\n\nRaw Data:\n<code>{balances}</code>"
@@ -26,13 +34,16 @@ def format_help_text():
 /buy – Simulate Buy
 /sell – Simulate Sell
 /balance – Wallet Balance
+/pnl – Daily PnL
 /aiprompt – Ask ChatGPT
 /debug – Bot Status
 /ping – Jupiter Check
-/menu – Button Menu"""
+/menu – Button Menu
+/pause – Pause/Resume
+/limit – Set Daily Limit"""
 
 def format_debug_info(wallet_address, live, trade_amt):
     return f"""<b>🔧 Debug Info</b>
 Wallet: <code>{wallet_address}</code>
 Live Mode: {'✅' if live else '❌'}
-Trade Amount: ${trade_amt}"""
+Trade Amount: {format_usd(trade_amt)}"""
