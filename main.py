@@ -422,6 +422,7 @@ def main():
     logger.info("🚀 Starting Flow X Bot...")
     updater = Updater(token=TELEGRAM_TOKEN, use_context=True)
     dispatcher = updater.dispatcher
+    job_queue = updater.job_queue
 
     # Register slash commands for Telegram interface
     updater.bot.set_my_commands([
