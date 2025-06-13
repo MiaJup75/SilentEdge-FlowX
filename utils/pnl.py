@@ -109,3 +109,15 @@ def format_pnl_summary(pnl_data: dict) -> str:
         )
     except Exception as e:
         return f"<b>❌ PnL Format Error:</b> {e}"
+
+# === Auto PnL Window Picker ===
+def calculate_auto_pnl():
+    today = calculate_daily_pnl("today")
+    if today["trades"] >= 3:
+        return today
+
+    last7d = calculate_daily_pnl("7d")
+    if last7d["trades"] >= 3:
+        return last7d
+
+    return calculate_daily_pnl("30d")
