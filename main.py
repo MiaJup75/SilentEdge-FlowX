@@ -511,12 +511,6 @@ def main():
     dispatcher.add_handler(CallbackQueryHandler(handle_pnl_button, pattern="^pnl:"))
     dispatcher.add_handler(CallbackQueryHandler(button))
     dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, fallback_message))
-    # ✅ New block ends
-
-    updater.start_webhook(
-
-    # ✅ Register fallback handler
-    dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, fallback_message))
 
     # ✅ Register scheduled jobs inside main
     job_queue.run_daily(
