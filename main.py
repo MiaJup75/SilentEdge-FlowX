@@ -493,6 +493,27 @@ def main():
         ("menu", "Show Buttons"),
         ("aiprompt", "Ask ChatGPT")
     ])
+    
+    # ✅ Insert this here (new block starts)
+    dispatcher.add_handler(CommandHandler("start", start))
+    dispatcher.add_handler(CommandHandler("buy", buy))
+    dispatcher.add_handler(CommandHandler("sell", sell))
+    dispatcher.add_handler(CommandHandler("balance", balance))
+    dispatcher.add_handler(CommandHandler("pnl", pnl))
+    dispatcher.add_handler(CommandHandler("ping", ping))
+    dispatcher.add_handler(CommandHandler("help", help_cmd))
+    dispatcher.add_handler(CommandHandler("debug", debug))
+    dispatcher.add_handler(CommandHandler("menu", menu))
+    dispatcher.add_handler(CommandHandler("aiprompt", aiprompt))
+    dispatcher.add_handler(CommandHandler("pause", pause))
+    dispatcher.add_handler(CommandHandler("limit", limit))
+
+    dispatcher.add_handler(CallbackQueryHandler(handle_pnl_button, pattern="^pnl:"))
+    dispatcher.add_handler(CallbackQueryHandler(button))
+    dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, fallback_message))
+    # ✅ New block ends
+
+    updater.start_webhook(
 
     # ✅ Register fallback handler
     dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, fallback_message))
