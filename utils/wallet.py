@@ -31,25 +31,24 @@ TOKEN_EMOJIS = {
 SOLANA_RPC_URL = os.getenv("SOLANA_RPC_URL", "https://api.mainnet-beta.solana.com")
 client = Client(SOLANA_RPC_URL)
 
-# === Get Wallet Address from Environment ===
+# === Get Wallet Address from ENV ===
 def get_wallet_address(wallet=None):
     return os.getenv("PHANTOM_WALLET_ADDRESS", "8xfd61QP7PA2zkeazJvTCYCwLj9eMqodZ1uUW19SEoL6")
 
-# === Fetch Token Price from DexScreener ===
+# === Fetch Price from DexScreener ===
 def fetch_price(pair_address: str) -> float:
     try:
         url = f"https://api.dexscreener.com/latest/dex/pairs/solana/{pair_address}"
         response = requests.get(url, timeout=5)
         data = response.json()
-        price = data.get("pair", {}).get("priceUsd")
-        if price is None:
-            raise ValueError("priceUsd missing in response")
-        return float(price)
+        if not data or not isinstance(data, dict) or "pair" not in data:
+            raise ValueError("Invalid response from DexScreener")
+        return float(data["pair"].get("priceUsd", 0.0))
     except Exception as e:
         print(f"❌ Error fetching price for {pair_address}: {e}")
         return 0.0
 
-# === Get Token Balances and USD Values ===
+# === Balance Logic ===
 def get_wallet_balance(wallet_address: str) -> tuple:
     balances = {}
     pubkey = PublicKey(wallet_address)
@@ -84,5 +83,4 @@ def get_wallet_balance(wallet_address: str) -> tuple:
             f"{emoji} <b>{symbol}</b>: {data['amount']:.4f} ≈ ${data['usd']:.2f} ({percent:.1f}%)"
         )
 
-    balance_message = "\n".join(display_lines)
-    return balances, balance_message
+    return balances, "\n".join(display_lines)
