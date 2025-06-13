@@ -6,33 +6,6 @@ from utils.pnl import calculate_daily_pnl
 from utils.format import format_usd, format_pnl_summary
 from utils.charts import generate_pnl_chart
 
-# === Daily Text-Only PnL Summary ===
-def send_daily_pnl_summary(context):
-    chat_id = os.getenv("OWNER_CHAT_ID")
-    if not chat_id:
-        return
-
-    try:
-        today = datetime.datetime.now().strftime("%d %b %Y")
-        pnl_data = calculate_daily_pnl()
-
-        text = (
-            f"<b>📊 Daily Trade Summary</b> ({today})\n"
-            f"📈 <b>Trades Executed:</b> {pnl_data['trades']}\n"
-            f"✅ <b>Win Rate:</b> {pnl_data['win_rate']}%\n"
-            f"💰 <b>Net PnL:</b> {format_usd(pnl_data['net_pnl'])}"
-        )
-
-        context.bot.send_message(
-            chat_id=int(chat_id),
-            text=text,
-            parse_mode=ParseMode.HTML
-        )
-
-    except Exception as e:
-        print(f"❌ Failed to send PnL report: {e}")
-
-
 # === Daily Image + Summary Auto Drop (9AM BKK) ===
 def send_daily_pnl_chart(context):
     chat_id = os.getenv("OWNER_CHAT_ID")
@@ -61,3 +34,30 @@ def send_daily_pnl_chart(context):
 
     except Exception as e:
         print(f"❌ Failed to send PnL chart: {e}")
+
+
+# === Optional Text-Only Fallback (Manual Use or Debug) ===
+def send_daily_pnl_summary(context):
+    chat_id = os.getenv("OWNER_CHAT_ID")
+    if not chat_id:
+        return
+
+    try:
+        today = datetime.datetime.now().strftime("%d %b %Y")
+        pnl_data = calculate_daily_pnl()
+
+        text = (
+            f"<b>📊 Daily Trade Summary</b> ({today})\n"
+            f"📈 <b>Trades Executed:</b> {pnl_data['trades']}\n"
+            f"✅ <b>Win Rate:</b> {pnl_data['win_rate']}%\n"
+            f"💰 <b>Net PnL:</b> {format_usd(pnl_data['net_pnl'])}"
+        )
+
+        context.bot.send_message(
+            chat_id=int(chat_id),
+            text=text,
+            parse_mode=ParseMode.HTML
+        )
+
+    except Exception as e:
+        print(f"❌ Failed to send PnL summary: {e}")
