@@ -25,7 +25,7 @@ from utils.format import (
 from utils.format import format_pnl_summary
 from utils.ping import check_jupiter_health
 from utils.gpt import ask_chatgpt
-from utils.reporting import send_daily_pnl_summary
+from utils.reporting import send_daily_pnl_chart
 from utils.charts import generate_pnl_chart
 from utils.format import format_pnl_summary
 from utils.menu import get_main_menu
@@ -474,7 +474,7 @@ def main():
 
 # === Scheduler: Daily 9AM Report ===
 job_queue.run_daily(
-    send_daily_pnl_summary,
+    send_daily_pnl_chart,
     time=datetime.time(hour=9, minute=0, tzinfo=bkk_tz)
 )
 import os
