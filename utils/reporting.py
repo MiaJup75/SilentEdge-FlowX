@@ -2,7 +2,8 @@
 import os
 import datetime
 from telegram import ParseMode
-from utils.pnl import calculate_daily_pnl  # Assumes this exists or mock logic inside
+from utils.pnl import calculate_daily_pnl
+from utils.format import format_usd  # ✅ Make sure this exists
 
 # === Daily PnL Summary Sender ===
 def send_daily_pnl_summary(context):
@@ -11,15 +12,15 @@ def send_daily_pnl_summary(context):
         return
 
     try:
-        today = datetime.datetime.now().strftime("%Y-%m-%d")
-        pnl_data = calculate_daily_pnl()  # Replace with actual logic as needed
+        today = datetime.datetime.now().strftime("%d %b %Y")
+        pnl_data = calculate_daily_pnl()  # Replace with real logic or mock safely
 
         # Format the report
         text = (
-            f"📅 <b>Daily Trade Summary – {today}</b>\n\n"
-            f"🔢 <b>Trades Executed:</b> {pnl_data['trades']}\n"
-            f"📈 <b>Win Rate:</b> {pnl_data['win_rate']}%\n"
-            f"💵 <b>Net PnL:</b> ${pnl_data['net_pnl']:.2f}\n"
+            f"<b>📊 Daily Trade Summary</b> ({today})\n"
+            f"📈 <b>Trades Executed:</b> {pnl_data['trades']}\n"
+            f"✅ <b>Win Rate:</b> {pnl_data['win_rate']}%\n"
+            f"💰 <b>Net PnL:</b> {format_usd(pnl_data['net_pnl'])}"
         )
 
         context.bot.send_message(
