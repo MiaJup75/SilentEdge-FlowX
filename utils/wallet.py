@@ -31,6 +31,11 @@ TOKEN_EMOJIS = {
 SOLANA_RPC_URL = os.getenv("SOLANA_RPC_URL", "https://api.mainnet-beta.solana.com")
 client = Client(SOLANA_RPC_URL)
 
+# === Get Wallet Address from Environment ===
+def get_wallet_address(wallet=None):
+    return os.getenv("PHANTOM_WALLET_ADDRESS", "8xfd61QP7PA2zkeazJvTCYCwLj9eMqodZ1uUW19SEoL6")
+
+# === Fetch Token Price from DexScreener ===
 def fetch_price(pair_address: str) -> float:
     try:
         url = f"https://api.dexscreener.com/latest/dex/pairs/solana/{pair_address}"
@@ -41,6 +46,7 @@ def fetch_price(pair_address: str) -> float:
         print(f"❌ Error fetching price for {pair_address}: {e}")
         return 0.0
 
+# === Get Token Balances and USD Values ===
 def get_wallet_balance(wallet_address: str) -> tuple:
     balances = {}
     pubkey = PublicKey(wallet_address)
