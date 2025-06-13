@@ -1,3 +1,6 @@
+# === utils/format.py ===
+from telegram import InlineKeyboardMarkup, InlineKeyboardButton
+
 def format_usd(value: float) -> str:
     """Format float as USD string, e.g. 1234.5 → '$1,234.50'"""
     return f"${value:,.2f}"
@@ -58,3 +61,16 @@ def format_pnl_summary(day, trades, total_buy, total_sell, net_pnl, win_rate):
 🎯 <b>Win Rate:</b> {win_rate}%
 {emoji} <b>Net PnL:</b> {format_usd(net_pnl)}
 """
+
+def get_pnl_buttons(active="today"):
+    def button(label, key):
+        prefix = "✅ " if key == active else ""
+        return InlineKeyboardButton(f"{prefix}{label}", callback_data=f"pnl:{key}")
+
+    return InlineKeyboardMarkup([
+        [button("📆 Today", "today"),
+         button("🕗 Yesterday", "yesterday")],
+        [button("📊 7d", "7d"),
+         button("📅 30d", "30d")],
+        [button("📈 All Time", "alltime")]
+    ])
