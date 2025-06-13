@@ -47,3 +47,14 @@ def format_debug_info(wallet_address, live, trade_amt):
 Wallet: <code>{wallet_address}</code>
 Live Mode: {'✅' if live else '❌'}
 Trade Amount: {format_usd(trade_amt)}"""
+
+def format_pnl_summary(day, trades, total_buy, total_sell, net_pnl, win_rate):
+    emoji = "🔥" if net_pnl > 0 else "🧊" if net_pnl < 0 else "➖"
+    return f"""📅 <b>Daily PnL Summary – {day.title()}</b>
+
+🔢 <b>Trades:</b> {trades}
+📈 <b>Gross Sell:</b> {format_usd(total_sell)}
+📉 <b>Gross Buy:</b> {format_usd(total_buy)}
+🎯 <b>Win Rate:</b> {win_rate}%
+{emoji} <b>Net PnL:</b> {format_usd(net_pnl)}
+"""
