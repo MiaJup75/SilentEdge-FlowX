@@ -12,7 +12,7 @@ from telegram.ext import (
     MessageHandler, Filters, CallbackContext
 )
 
-from utils.wallet import get_wallet_address
+from utils.wallet import get_wallet_address, get_wallet_balance
 from utils.trade import execute_jupiter_trade
 from utils.pnl import calculate_daily_pnl, calculate_auto_pnl
 from utils.format import (
