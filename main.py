@@ -13,7 +13,7 @@ from telegram.ext import (
 )
 
 from utils.wallet import get_wallet_address, get_wallet_balance
-from utils.trade import execute_jupiter_trade
+from utils.trade import execute_jupiter_trade, live_buy, live_sell
 from utils.pnl import calculate_daily_pnl, calculate_auto_pnl
 from utils.format import (
     format_trade_result,
@@ -507,6 +507,8 @@ def main():
     dispatcher.add_handler(CommandHandler("aiprompt", aiprompt))
     dispatcher.add_handler(CommandHandler("pause", pause))
     dispatcher.add_handler(CommandHandler("limit", limit))
+    dispatcher.add_handler(CommandHandler("livebuy", live_buy))
+    dispatcher.add_handler(CommandHandler("livesell", live_sell))
 
     dispatcher.add_handler(CallbackQueryHandler(handle_pnl_button, pattern="^pnl:"))
     dispatcher.add_handler(CallbackQueryHandler(button))
@@ -554,6 +556,31 @@ def fallback_message(update: Update, context: CallbackContext):
         parse_mode=ParseMode.HTML
     )
 
+def live_buy(update: Update, context: CallbackContext):
+    if is_paused():
+        update.message.reply_text("⛔ Trading is currently paused.")
+        return
+    if not check_and_increment_trade_count():
+        update.message.reply_text("⚠️ Daily trade limit reached.")
+        return
+
+    update.message.reply_text("💸 Executing live BUY...")
+    wallet = get_wallet_address()
+    result = execute_jupiter_trade(wallet, "BUY", TRADE_AMOUNT_USDC, live=True)
+    update.message.reply_text(format_trade_result(result), parse_mode=ParseMode.HTML)
+
+def live_sell(update: Update, context: CallbackContext):
+    if is_paused():
+        update.message.reply_text("⛔ Trading is currently paused.")
+        return
+    if not check_and_increment_trade_count():
+        update.message.reply_text("⚠️ Daily trade limit reached.")
+        return
+
+    update.message.reply_text("💸 Executing live SELL...")
+    wallet = get_wallet_address()
+    result = execute_jupiter_trade(wallet, "SELL", TRADE_AMOUNT_USDC, live=True)
+    update.message.reply_text(format_trade_result(result), parse_mode=ParseMode.HTML)
 
 # === Run Bot ===
 if __name__ == '__main__':
