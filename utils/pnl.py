@@ -1,6 +1,7 @@
 import sqlite3
 from datetime import datetime, timedelta
 import os
+from utils.charts import generate_pnl_chart
 
 DB_PATH = "trades.db"  # Update this path if your database is elsewhere
 
@@ -62,12 +63,30 @@ def calculate_daily_pnl(day="today"):
 
     trades_count = len(rows)
     pnl = round(total_sell - total_buy, 2)
-    emoji = "📈" if pnl >= 0 else "📉"
+    win_rate = 100 if pnl >= 0 else 0  # placeholder logic
 
-    return f"""
-📊 <b>Daily PnL Report ({day.title()})</b>
-Total Trades: <b>{trades_count}</b>
-Gross Buy: ${total_buy:,.2f}
-Gross Sell: ${total_sell:,.2f}
-{emoji} <b>Net PnL:</b> ${pnl:,.2f}
-""".strip()
+    return {
+        "trades": trades_count,
+        "net_pnl": pnl,
+        "win_rate": win_rate,
+        "history": [pnl]  # expand to real history later
+    }
+
+def format_pnl_summary(pnl_data: dict) -> str:
+    try:
+        net = pnl_data.get("net_pnl", 0)
+        win_rate = pnl_data.get("win_rate", 0)
+        trades = pnl_data.get("trades", 0)
+        recent = pnl_data.get("history", [])
+
+        chart = generate_pnl_chart(recent)
+
+        return (
+            f"<b>📊 Performance Summary</b>\n\n"
+            f"🔢 <b>Trades:</b> {trades}\n"
+            f"📈 <b>Win Rate:</b> {win_rate}%\n"
+            f"💵 <b>Net PnL:</b> ${net:.2f}\n\n"
+            f"{chart}"
+        )
+    except Exception as e:
+        return f"<b>❌ PnL Format Error:</b> {e}"
