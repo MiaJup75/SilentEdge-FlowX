@@ -41,7 +41,10 @@ def fetch_price(pair_address: str) -> float:
         url = f"https://api.dexscreener.com/latest/dex/pairs/solana/{pair_address}"
         response = requests.get(url, timeout=5)
         data = response.json()
-        return float(data["pair"]["priceUsd"])
+        price = data.get("pair", {}).get("priceUsd")
+        if price is None:
+            raise ValueError("priceUsd missing in response")
+        return float(price)
     except Exception as e:
         print(f"❌ Error fetching price for {pair_address}: {e}")
         return 0.0
