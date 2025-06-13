@@ -8,3 +8,4 @@ solana==0.20.0
 base58
 openai
 bip_utils==2.6.0
+matplotlib
