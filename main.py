@@ -151,7 +151,6 @@ def button(update: Update, context: CallbackContext):
                 query.edit_message_media(
                     media=InputMediaPhoto(media=img, caption=summary, parse_mode=ParseMode.HTML),
                     reply_markup=get_pnl_buttons(view)
-                    )
                 )
 
         elif action == "menu":
