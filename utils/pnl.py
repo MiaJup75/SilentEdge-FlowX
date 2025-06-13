@@ -103,7 +103,7 @@ def format_pnl_summary(pnl_data: dict) -> str:
         return (
             f"<b>📊 Performance Summary</b>\n\n"
             f"🔢 <b>Trades:</b> {trades}\n"
-            f"📈 <b>Win Rate:</b> {win_rate}%\n"
+            f"📈 <b>Win Rate:</b> {win_rate}% {score_emoji(win_rate)}\n"
             f"💵 <b>Net PnL:</b> ${net:.2f}\n\n"
             f"{chart}"
         )
@@ -121,3 +121,14 @@ def calculate_auto_pnl():
         return last7d
 
     return calculate_daily_pnl("30d")
+
+# === Emoji Grader for Win Rate ===
+def score_emoji(win_rate):
+    if win_rate >= 80:
+        return "🔥"
+    elif win_rate >= 60:
+        return "✅"
+    elif win_rate >= 40:
+        return "⚠️"
+    else:
+        return "🧊"
