@@ -36,6 +36,15 @@ def fetch_price(pair_address: str) -> float:
         print(f"❌ Error fetching price for {pair_address}: {e}")
         return 0.0
 
+# === Optional: Mint Address Mapping ===
+def symbol_to_mint(symbol: str) -> str:
+    return {
+        "USDC": "Es9vMFrzaCERsbyzNKzD4DM6YkT6rzdEDHHZLCXh4MfP",
+        "wBTC": "9n4nbM75f5Ui33ZbPYXn59EwSgE8CGsHtAeTH5YFeJ9E",
+        "wETH": "7vfCXTz6Xn9PafWz6ZrYT4hwTnTqQZKrj6kzzF7QjZqx",
+        "wXRP": "6p9hY3F7v2KQhRJgkzGwXeMTufKYdcG89h6K9bGVznhu"
+    }.get(symbol, "")
+
 # === Balance + USD Fetch ===
 def get_wallet_balance(wallet_address: str) -> tuple:
     balances = {}
@@ -58,7 +67,7 @@ def get_wallet_balance(wallet_address: str) -> tuple:
                 "usd": round(amount * price, 2)
             }
         except Exception as e:
-            print(f"⚠️ Error fetching {symbol}: {e}")
+            print(f"⚡️ Error fetching {symbol}: {e}")
             balances[symbol] = {"amount": 0.0, "usd": 0.0}
 
     total_usd = sum(token["usd"] for token in balances.values())
@@ -74,11 +83,6 @@ def get_wallet_balance(wallet_address: str) -> tuple:
     balance_message = "\n".join(display_lines)
     return balances, balance_message
 
-# === Optional: Mint Address Mapping ===
-def symbol_to_mint(symbol: str) -> str:
-    return {
-        "USDC": "Es9vMFrzaCERsbyzNKzD4DM6YkT6rzdEDHHZLCXh4MfP",
-        "wBTC": "9n4nbM75f5Ui33ZbPYXn59EwSgE8CGsHtAeTH5YFeJ9E",
-        "wETH": "7vfCXTz6Xn9PafWz6ZrYT4hwTnTqQZKrj6kzzF7QjZqx",
-        "wXRP": "6p9hY3F7v2KQhRJgkzGwXeMTufKYdcG89h6K9bGVznhu"
-    }.get(symbol, "")
+# === Public Wallet Accessor ===
+def get_wallet_address(_=None):
+    return "8xfd61QP7PA2zkeazJvTCYCwLj9eMqodZ1uUW19SEoL6"
