@@ -59,13 +59,18 @@ def get_wallet_balance(wallet_address: str) -> tuple:
             else:
                 ata = get_associated_token_address(pubkey, PublicKey(mint_address))
                 token_info = client.get_token_account_balance(ata)
-                amount = float(token_info.get("result", {}).get("value", {}).get("uiAmount", 0))
+
+                # Patch: fallback to 0 if ATA doesn't exist or is empty
+                amount = 0.0
+                if token_info.get("result") and token_info["result"].get("value"):
+                    amount = float(token_info["result"]["value"].get("uiAmount", 0))
 
             price = fetch_price(mint_address)
             balances[symbol] = {
                 "amount": round(amount, 4),
                 "usd": round(amount * price, 2)
             }
+
         except Exception as e:
             print(f"⚠️ Error fetching {symbol}: {e}")
             balances[symbol] = {"amount": 0.0, "usd": 0.0}
