@@ -318,43 +318,31 @@ def menu(update: Update, context: CallbackContext):
             parse_mode=ParseMode.HTML
         )
 
-# === /pnl Command ===
 def pnl(update: Update, context: CallbackContext):
     try:
-        arg = context.args[0].lower() if context.args else "today"
-        if arg not in ["today", "yesterday", "alltime"]:
-            update.message.reply_text("❗ Use /pnl [today|yesterday|alltime]")
-            return
+        # Determine time range
+        arg = context.args[0].lower() if context.args else "auto"
+        valid = ["today", "yesterday", "7d", "30d"]
+        day = arg if arg in valid else "auto"
 
-        update.message.reply_text("⏳ Fetching PnL...")
-
-        report = calculate_daily_pnl(arg)
+        # Pull PnL data
+        report = calculate_auto_pnl() if day == "auto" else calculate_daily_pnl(day)
         summary = format_pnl_summary(report)
+        chart_path = generate_pnl_chart(report["history"], label=day)
 
-        # Generate chart image
-        chart_path = generate_pnl_chart(report["history"], arg)
-
-        # Send image + summary
-        with open(chart_path, "rb") as img:
-            update.message.reply_photo(
-                photo=img,
-                caption=summary,
-                parse_mode=ParseMode.HTML,
-                reply_markup=InlineKeyboardMarkup([
-                    [
-                        InlineKeyboardButton("📅 Today", callback_data="pnl:today"),
-                        InlineKeyboardButton("🕘 Yesterday", callback_data="pnl:yesterday"),
-                        InlineKeyboardButton("📊 All Time", callback_data="pnl:alltime")
-                    ]
-                ])
+        # Send chart if available
+        if os.path.exists(chart_path):
+            with open(chart_path, "rb") as img:
+                update.message.reply_photo(
+                    photo=img,
+                    caption=summary,
+                    parse_mode=ParseMode.HTML
+                )
+        else:
+            update.message.reply_text(
+                summary,
+                parse_mode=ParseMode.HTML
             )
-
-    except Exception as e:
-        logger.error(f"/pnl error: {e}")
-        update.message.reply_text(
-            format_error_message("❌ Failed to generate PnL."),
-            parse_mode=ParseMode.HTML
-        )
 
     except Exception as e:
         logger.error(f"/pnl error: {e}")
