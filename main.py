@@ -480,13 +480,7 @@ def main():
     dispatcher = updater.dispatcher
     job_queue = updater.job_queue
 
-    # ✅ Register scheduled jobs inside main
-    job_queue.run_daily(
-        send_daily_pnl_chart,
-        time=datetime.time(hour=9, minute=0, tzinfo=bkk_tz)
-    )
-
-    # Register slash commands for Telegram interface
+    # ✅ Register slash commands for Telegram interface
     updater.bot.set_my_commands([
         ("start", "Launch bot"),
         ("buy", "Simulate Buy"),
@@ -500,9 +494,18 @@ def main():
         ("aiprompt", "Ask ChatGPT")
     ])
 
+    # ✅ Register fallback handler
+    dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, fallback_message))
+
+    # ✅ Register scheduled jobs inside main
+    job_queue.run_daily(
+        send_daily_pnl_chart,
+        time=datetime.time(hour=9, minute=0, tzinfo=bkk_tz)
+    )
+
+    # ✅ Start webhook
     PORT = int(os.environ.get("PORT", "10000"))
     WEBHOOK_URL = os.environ.get("WEBHOOK_URL")
-
     updater.start_webhook(
         listen="0.0.0.0",
         port=PORT,
@@ -510,7 +513,7 @@ def main():
         webhook_url=f"{WEBHOOK_URL}/{TELEGRAM_TOKEN}"
     )
 
-    dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, fallback_message))
+    # ✅ Keep the bot running
     updater.idle()
 
 
