@@ -4,13 +4,13 @@ from solana.rpc.api import Client
 from solana.publickey import PublicKey
 from spl.token.instructions import get_associated_token_address
 
-# === Token Definitions ===
+# === Token Definitions (DexScreener Mint Addresses) ===
 TOKEN_PAIRS = {
-    "SOL": "6fXq9KzvGrF1xKmZYMeY6sYzU8qWZ8tMvtn5Zrk2LGNz",
-    "USDC": "4dFgdXHkG6KnM8JzBfdzqTSqFwRQpDsz6Tf26UnRwZTJ",
-    "wBTC": "Dqj1fsnXvHU4W4kURHs9zKgyU9xq35zhtMTWkzXSttDp",
-    "wETH": "67jSDkJejsFGmcm4dbopHyhz7Qac4VrF4XNoeapw4RkU",
-    "wXRP": "7WPoKQK8dAzYiyPdJXejZdE4zqEdsoTw5ibMBXLsowwT"
+    "SOL": "So11111111111111111111111111111111111111112",
+    "USDC": "Es9vMFrzaCERsbyzNKzD4DM6YkT6rzdEDHHZLCXh4MfP",
+    "wBTC": "9n4nbM75f5Ui33ZbPYXn59EwSgE8CGsHtAeTH5YFeJ9E",
+    "wETH": "7vfCXTz6Xn9PafWz6ZrYT4hwTnTqQZKrj6kzzF7QjZqx",
+    "wXRP": "6p9hY3F7v2KQhRJgkzGwXeMTufKYdcG89h6K9bGVznhu"
 }
 
 TOKEN_MINTS = {
@@ -31,40 +31,37 @@ TOKEN_EMOJIS = {
 SOLANA_RPC_URL = os.getenv("SOLANA_RPC_URL", "https://api.mainnet-beta.solana.com")
 client = Client(SOLANA_RPC_URL)
 
-# === Get Wallet Address from ENV ===
+# === Get Wallet Address ===
 def get_wallet_address(wallet=None):
     return os.getenv("PHANTOM_WALLET_ADDRESS", "8xfd61QP7PA2zkeazJvTCYCwLj9eMqodZ1uUW19SEoL6")
 
-# === Fetch Price from DexScreener ===
-def fetch_price(pair_address: str) -> float:
+# === Price Fetcher ===
+def fetch_price(mint_address: str) -> float:
     try:
-        url = f"https://api.dexscreener.com/latest/dex/pairs/solana/{pair_address}"
-        response = requests.get(url, timeout=5)
-        data = response.json()
-        if not data or not isinstance(data, dict) or "pair" not in data:
-            raise ValueError("Invalid response from DexScreener")
-        return float(data["pair"].get("priceUsd", 0.0))
+        url = f"https://api.dexscreener.com/latest/dex/tokens/{mint_address}"
+        res = requests.get(url, timeout=5).json()
+        if "pairs" in res and res["pairs"]:
+            return float(res["pairs"][0].get("priceUsd", 0.0))
     except Exception as e:
-        print(f"❌ Error fetching price for {pair_address}: {e}")
-        return 0.0
+        print(f"❌ Error fetching price for {mint_address}: {e}")
+    return 0.0
 
-# === Balance Logic ===
+# === Wallet Balancer ===
 def get_wallet_balance(wallet_address: str) -> tuple:
     balances = {}
     pubkey = PublicKey(wallet_address)
 
-    for symbol, pair_address in TOKEN_PAIRS.items():
+    for symbol, mint_address in TOKEN_PAIRS.items():
         try:
             if symbol == "SOL":
                 result = client.get_balance(pubkey)
                 amount = result.get("result", {}).get("value", 0) / 1_000_000_000
             else:
-                mint_address = TOKEN_MINTS.get(symbol)
                 ata = get_associated_token_address(pubkey, PublicKey(mint_address))
                 token_info = client.get_token_account_balance(ata)
                 amount = float(token_info.get("result", {}).get("value", {}).get("uiAmount", 0))
 
-            price = fetch_price(pair_address)
+            price = fetch_price(mint_address)
             balances[symbol] = {
                 "amount": round(amount, 4),
                 "usd": round(amount * price, 2)
@@ -73,14 +70,14 @@ def get_wallet_balance(wallet_address: str) -> tuple:
             print(f"⚠️ Error fetching {symbol}: {e}")
             balances[symbol] = {"amount": 0.0, "usd": 0.0}
 
-    total_usd = sum(token["usd"] for token in balances.values())
-    display_lines = [f"💰 <b>Total Wallet Value:</b> ${round(total_usd, 2):,.2f}\n"]
+    total_usd = sum(x["usd"] for x in balances.values())
+    display = [f"💰 <b>Total Wallet Value:</b> ${total_usd:,.2f}\n"]
 
     for symbol, data in balances.items():
         percent = (data["usd"] / total_usd * 100) if total_usd else 0
         emoji = TOKEN_EMOJIS.get(symbol, "🔸")
-        display_lines.append(
+        display.append(
             f"{emoji} <b>{symbol}</b>: {data['amount']:.4f} ≈ ${data['usd']:.2f} ({percent:.1f}%)"
         )
 
-    return balances, "\n".join(display_lines)
+    return balances, "\n".join(display)
