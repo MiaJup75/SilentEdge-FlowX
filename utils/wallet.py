@@ -1,31 +1,84 @@
 import os
-from bip_utils import Bip39SeedGenerator, Bip44, Bip44Coins, Bip44Changes
-from solders.keypair import Keypair
+import requests
+from solana.rpc.api import Client
+from solana.publickey import PublicKey
+from spl.token.instructions import get_associated_token_address
 
-def load_wallet():
-    mnemonic = os.getenv("PHANTOM_MNEMONIC")
-    if not mnemonic:
-        raise ValueError("Missing PHANTOM_MNEMONIC in environment variables")
+# === Token Pair Addresses for DexScreener ===
+TOKEN_MINTS = {
+    "SOL": "6fXq9KzvGrF1xKmZYMeY6sYzU8qWZ8tMvtn5Zrk2LGNz",   # SOL-USDC
+    "USDC": "6fXq9KzvGrF1xKmZYMeY6sYzU8qWZ8tMvtn5Zrk2LGNz",  # same pair
+    "wBTC": "Dqj1fsnXvHU4W4kURHs9zKgyU9xq35zhtMTWkzXSttDp",
+    "wETH": "67jSDkJejsFGmcm4dbopHyhz7Qac4VrF4XNoeapw4RkU",
+    "wXRP": "7WPoKQK8dAzYiyPdJXejZdE4zqEdsoTw5ibMBXLsowwT"
+}
 
-    seed_bytes = Bip39SeedGenerator(mnemonic).Generate()
+TOKEN_EMOJIS = {
+    "SOL": "🪙",
+    "USDC": "💵",
+    "wBTC": "₿",
+    "wETH": "🧪",
+    "wXRP": "💧"
+}
 
-    account = Bip44.FromSeed(seed_bytes, Bip44Coins.SOLANA) \
-                   .Purpose().Coin().Account(1) \
-                   .Change(Bip44Changes.CHAIN_EXT) \
-                   .AddressIndex(0)
+# === Solana RPC Setup ===
+SOLANA_RPC_URL = os.getenv("SOLANA_RPC_URL", "https://api.mainnet-beta.solana.com")
+client = Client(SOLANA_RPC_URL)
 
-    private_key = account.PrivateKey().Raw().ToBytes()
-    full_public_key = account.PublicKey().RawUncompressed().ToBytes()
+# === DexScreener Price Fetch ===
+def fetch_price(pair_address: str) -> float:
+    try:
+        url = f"https://api.dexscreener.com/latest/dex/pairs/solana/{pair_address}"
+        response = requests.get(url, timeout=5)
+        data = response.json()
+        return float(data["pair"]["priceUsd"])
+    except Exception as e:
+        print(f"❌ Error fetching price for {pair_address}: {e}")
+        return 0.0
 
-    # ✅ Strip prefix byte to get 32-byte public key
-    public_key = full_public_key[1:33]  # ⚠️ Skip first byte (0x04), keep next 32
+# === Balance + USD Fetch ===
+def get_wallet_balance(wallet_address: str) -> tuple:
+    balances = {}
+    pubkey = PublicKey(wallet_address)
 
-    keypair_bytes = private_key + public_key
+    for symbol, pair_address in TOKEN_MINTS.items():
+        try:
+            if symbol == "SOL":
+                result = client.get_balance(pubkey)
+                amount = result.get("result", {}).get("value", 0) / 1_000_000_000
+            else:
+                mint = PublicKey(symbol_to_mint(symbol))
+                ata = get_associated_token_address(pubkey, mint)
+                token_info = client.get_token_account_balance(ata)
+                amount = float(token_info.get("result", {}).get("value", {}).get("uiAmount", 0))
 
-    if len(keypair_bytes) != 64:
-        raise ValueError(f"🔴 Combined key length is {len(keypair_bytes)} (expected 64)")
+            price = fetch_price(pair_address)
+            balances[symbol] = {
+                "amount": round(amount, 4),
+                "usd": round(amount * price, 2)
+            }
+        except Exception as e:
+            print(f"⚠️ Error fetching {symbol}: {e}")
+            balances[symbol] = {"amount": 0.0, "usd": 0.0}
 
-    return Keypair.from_bytes(keypair_bytes)
+    total_usd = sum(token["usd"] for token in balances.values())
+    display_lines = [f"💰 <b>Total Wallet Value:</b> ${round(total_usd, 2):,.2f}\n"]
 
-def get_wallet_address(wallet):
-    return str(wallet.pubkey())
+    for symbol, data in balances.items():
+        percent = (data["usd"] / total_usd * 100) if total_usd else 0
+        emoji = TOKEN_EMOJIS.get(symbol, "🔸")
+        display_lines.append(
+            f"{emoji} <b>{symbol}</b>: {data['amount']:.4f} ≈ ${data['usd']:.2f} ({percent:.1f}%)"
+        )
+
+    balance_message = "\n".join(display_lines)
+    return balances, balance_message
+
+# === Optional: Mint Address Mapping ===
+def symbol_to_mint(symbol: str) -> str:
+    return {
+        "USDC": "Es9vMFrzaCERsbyzNKzD4DM6YkT6rzdEDHHZLCXh4MfP",
+        "wBTC": "9n4nbM75f5Ui33ZbPYXn59EwSgE8CGsHtAeTH5YFeJ9E",
+        "wETH": "7vfCXTz6Xn9PafWz6ZrYT4hwTnTqQZKrj6kzzF7QjZqx",
+        "wXRP": "6p9hY3F7v2KQhRJgkzGwXeMTufKYdcG89h6K9bGVznhu"
+    }.get(symbol, "")
