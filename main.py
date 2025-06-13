@@ -469,21 +469,62 @@ def main():
     # Catch-all for non-command messages
     dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, fallback_message))
 
-# === Scheduler: Daily 9AM Report ===
-job_queue.run_daily(
-    send_daily_pnl_chart,
-    time=datetime.time(hour=9, minute=0, tzinfo=bkk_tz)
-)
+# === Bot Launcher ===
+def main():
+    if not TELEGRAM_TOKEN:
+        logger.error("❌ TELEGRAM_TOKEN missing. Cannot start bot.")
+        return
+
+    logger.info("🚀 Starting Flow X Bot...")
+    updater = Updater(token=TELEGRAM_TOKEN, use_context=True)
+    dispatcher = updater.dispatcher
+    job_queue = updater.job_queue
+
+    # ✅ Register scheduled jobs inside main
+    job_queue.run_daily(
+        send_daily_pnl_chart,
+        time=datetime.time(hour=9, minute=0, tzinfo=bkk_tz)
+    )
+
+    # Register slash commands for Telegram interface
+    updater.bot.set_my_commands([
+        ("start", "Launch bot"),
+        ("buy", "Simulate Buy"),
+        ("sell", "Simulate Sell"),
+        ("balance", "Wallet Balance"),
+        ("pnl", "PnL Summary"),
+        ("ping", "Jupiter Check"),
+        ("help", "Help Menu"),
+        ("debug", "Bot Status"),
+        ("menu", "Show Buttons"),
+        ("aiprompt", "Ask ChatGPT")
+    ])
+
+    PORT = int(os.environ.get("PORT", "10000"))
+    WEBHOOK_URL = os.environ.get("WEBHOOK_URL")
+
+    updater.start_webhook(
+        listen="0.0.0.0",
+        port=PORT,
+        url_path=TELEGRAM_TOKEN,
+        webhook_url=f"{WEBHOOK_URL}/{TELEGRAM_TOKEN}"
+    )
+
+    dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, fallback_message))
+    updater.idle()
+
+
+# === Timezone Setup + Imports ===
 import os
 import pytz
 import datetime
-from telegram.ext import Updater, CallbackContext
+from telegram.ext import Updater, CallbackContext, MessageHandler, Filters
 from telegram import Update, ParseMode
-from utils.reporting import send_daily_pnl_summary
+from utils.reporting import send_daily_pnl_chart
 import logging
 
 # Load bot token
-TOKEN = os.getenv("BOT_TOKEN")  # Or: from config import TOKEN
+TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 
 # Set timezone
 bkk_tz = pytz.timezone("Asia/Bangkok")
@@ -495,6 +536,7 @@ def fallback_message(update: Update, context: CallbackContext):
         parse_mode=ParseMode.HTML
     )
 
-# === Bot Startup ===
+
+# === Run Bot ===
 if __name__ == '__main__':
     main()
