@@ -29,6 +29,7 @@ from utils.reporting import send_daily_pnl_summary
 from utils.charts import generate_pnl_chart
 from utils.format import format_pnl_summary
 from utils.menu import get_main_menu
+from handlers.pnl_handlers import pnl, handle_pnl_button
 from utils.pin import pin_welcome_message
 from state_manager import (
     is_paused,
