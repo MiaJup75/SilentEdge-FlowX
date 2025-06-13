@@ -4,13 +4,20 @@ from solana.rpc.api import Client
 from solana.publickey import PublicKey
 from spl.token.instructions import get_associated_token_address
 
-# === Token Pair Addresses for DexScreener ===
-TOKEN_MINTS = {
-    "SOL": "6fXq9KzvGrF1xKmZYMeY6sYzU8qWZ8tMvtn5Zrk2LGNz",   # SOL-USDC
-    "USDC": "6fXq9KzvGrF1xKmZYMeY6sYzU8qWZ8tMvtn5Zrk2LGNz",  # same pair
+# === Token Definitions ===
+TOKEN_PAIRS = {
+    "SOL": "6fXq9KzvGrF1xKmZYMeY6sYzU8qWZ8tMvtn5Zrk2LGNz",
+    "USDC": "6fXq9KzvGrF1xKmZYMeY6sYzU8qWZ8tMvtn5Zrk2LGNz",
     "wBTC": "Dqj1fsnXvHU4W4kURHs9zKgyU9xq35zhtMTWkzXSttDp",
     "wETH": "67jSDkJejsFGmcm4dbopHyhz7Qac4VrF4XNoeapw4RkU",
     "wXRP": "7WPoKQK8dAzYiyPdJXejZdE4zqEdsoTw5ibMBXLsowwT"
+}
+
+TOKEN_MINTS = {
+    "USDC": "Es9vMFrzaCERsbyzNKzD4DM6YkT6rzdEDHHZLCXh4MfP",
+    "wBTC": "9n4nbM75f5Ui33ZbPYXn59EwSgE8CGsHtAeTH5YFeJ9E",
+    "wETH": "7vfCXTz6Xn9PafWz6ZrYT4hwTnTqQZKrj6kzzF7QjZqx",
+    "wXRP": "6p9hY3F7v2KQhRJgkzGwXeMTufKYdcG89h6K9bGVznhu"
 }
 
 TOKEN_EMOJIS = {
@@ -21,11 +28,9 @@ TOKEN_EMOJIS = {
     "wXRP": "💧"
 }
 
-# === Solana RPC Setup ===
 SOLANA_RPC_URL = os.getenv("SOLANA_RPC_URL", "https://api.mainnet-beta.solana.com")
 client = Client(SOLANA_RPC_URL)
 
-# === DexScreener Price Fetch ===
 def fetch_price(pair_address: str) -> float:
     try:
         url = f"https://api.dexscreener.com/latest/dex/pairs/solana/{pair_address}"
@@ -36,28 +41,18 @@ def fetch_price(pair_address: str) -> float:
         print(f"❌ Error fetching price for {pair_address}: {e}")
         return 0.0
 
-# === Optional: Mint Address Mapping ===
-def symbol_to_mint(symbol: str) -> str:
-    return {
-        "USDC": "Es9vMFrzaCERsbyzNKzD4DM6YkT6rzdEDHHZLCXh4MfP",
-        "wBTC": "9n4nbM75f5Ui33ZbPYXn59EwSgE8CGsHtAeTH5YFeJ9E",
-        "wETH": "7vfCXTz6Xn9PafWz6ZrYT4hwTnTqQZKrj6kzzF7QjZqx",
-        "wXRP": "6p9hY3F7v2KQhRJgkzGwXeMTufKYdcG89h6K9bGVznhu"
-    }.get(symbol, "")
-
-# === Balance + USD Fetch ===
 def get_wallet_balance(wallet_address: str) -> tuple:
     balances = {}
     pubkey = PublicKey(wallet_address)
 
-    for symbol, pair_address in TOKEN_MINTS.items():
+    for symbol, pair_address in TOKEN_PAIRS.items():
         try:
             if symbol == "SOL":
                 result = client.get_balance(pubkey)
                 amount = result.get("result", {}).get("value", 0) / 1_000_000_000
             else:
-                mint = PublicKey(symbol_to_mint(symbol))
-                ata = get_associated_token_address(pubkey, mint)
+                mint_address = TOKEN_MINTS.get(symbol)
+                ata = get_associated_token_address(pubkey, PublicKey(mint_address))
                 token_info = client.get_token_account_balance(ata)
                 amount = float(token_info.get("result", {}).get("value", {}).get("uiAmount", 0))
 
@@ -67,7 +62,7 @@ def get_wallet_balance(wallet_address: str) -> tuple:
                 "usd": round(amount * price, 2)
             }
         except Exception as e:
-            print(f"⚡️ Error fetching {symbol}: {e}")
+            print(f"⚠️ Error fetching {symbol}: {e}")
             balances[symbol] = {"amount": 0.0, "usd": 0.0}
 
     total_usd = sum(token["usd"] for token in balances.values())
@@ -82,7 +77,3 @@ def get_wallet_balance(wallet_address: str) -> tuple:
 
     balance_message = "\n".join(display_lines)
     return balances, balance_message
-
-# === Public Wallet Accessor ===
-def get_wallet_address(_=None):
-    return "8xfd61QP7PA2zkeazJvTCYCwLj9eMqodZ1uUW19SEoL6"
