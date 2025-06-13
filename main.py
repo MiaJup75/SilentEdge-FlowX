@@ -23,6 +23,7 @@ from utils.format import (
     format_debug_info
 )
 from utils.format import format_pnl_summary
+from utils.format import get_pnl_buttons
 from utils.ping import check_jupiter_health
 from utils.gpt import ask_chatgpt
 from utils.reporting import send_daily_pnl_chart
@@ -149,12 +150,7 @@ def button(update: Update, context: CallbackContext):
             with open(chart_path, "rb") as img:
                 query.edit_message_media(
                     media=InputMediaPhoto(media=img, caption=summary, parse_mode=ParseMode.HTML),
-                    reply_markup=InlineKeyboardMarkup([
-                        [
-                            InlineKeyboardButton("📅 Today", callback_data="pnl:today"),
-                            InlineKeyboardButton("🕘 Yesterday", callback_data="pnl:yesterday"),
-                            InlineKeyboardButton("📊 All Time", callback_data="pnl:alltime")
-                        ]
+                    reply_markup=get_pnl_buttons(view)
                     ])
                 )
 
