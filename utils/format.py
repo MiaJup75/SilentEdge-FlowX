@@ -2,11 +2,9 @@
 from telegram import InlineKeyboardMarkup, InlineKeyboardButton
 
 def format_usd(value: float) -> str:
-    """Format float as USD string, e.g. 1234.5 → '$1,234.50'"""
     return f"${value:,.2f}"
 
 def format_amount(value: float) -> str:
-    """Format token amount with 4 decimals, e.g. 1.234567 → '1.2346'"""
     return f"{value:,.4f}"
 
 def format_trade_result(result):
@@ -53,7 +51,7 @@ Trade Amount: {format_usd(trade_amt)}"""
 
 def format_pnl_summary(day, trades, total_buy, total_sell, net_pnl, win_rate):
     emoji = "🔥" if net_pnl > 0 else "🧊" if net_pnl < 0 else "➖"
-    return f"""📅 <b>Daily PnL Summary – {day.title()}</b>
+    return f"""📅 <b>Performance Summary – {day.title()}</b>
 
 🔢 <b>Trades:</b> {trades}
 📈 <b>Gross Sell:</b> {format_usd(total_sell)}
@@ -63,14 +61,16 @@ def format_pnl_summary(day, trades, total_buy, total_sell, net_pnl, win_rate):
 """
 
 def get_pnl_buttons(active="today"):
-    def button(label, key):
-        prefix = "✅ " if key == active else ""
-        return InlineKeyboardButton(f"{prefix}{label}", callback_data=f"pnl:{key}")
+    options = [
+        ("📆 Today", "today"),
+        ("🕗 Yesterday", "yesterday"),
+        ("📊 7d", "7d"),
+        ("📅 30d", "30d"),
+        ("📈 All Time", "alltime")
+    ]
+    buttons = [InlineKeyboardButton(
+        f"{label} {'✅' if key == active else ''}",
+        callback_data=f"pnl:{key}"
+    ) for label, key in options]
 
-    return InlineKeyboardMarkup([
-        [button("📆 Today", "today"),
-         button("🕗 Yesterday", "yesterday")],
-        [button("📊 7d", "7d"),
-         button("📅 30d", "30d")],
-        [button("📈 All Time", "alltime")]
-    ])
+    return InlineKeyboardMarkup([buttons])
