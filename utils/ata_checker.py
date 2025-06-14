@@ -6,11 +6,11 @@ from solana.publickey import PublicKey
 RPC_URL = "https://api.mainnet-beta.solana.com"
 client = Client(RPC_URL)
 
-def check_ata_exists(wallet_address: str, token_mint: str) -> bool:
+def has_token_account(wallet_address: str, token_mint: str) -> bool:
     try:
         resp = client.get_token_accounts_by_owner(
             PublicKey(wallet_address),
-            mint=PublicKey(token_mint)
+            opts={"mint": PublicKey(token_mint)}
         )
         return len(resp.get("result", {}).get("value", [])) > 0
     except Exception as e:
