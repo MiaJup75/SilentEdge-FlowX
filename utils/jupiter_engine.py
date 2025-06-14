@@ -9,7 +9,7 @@ JUPITER_SWAP_URL = "https://quote-api.jup.ag/v6/swap"
 
 # Token Mints
 SOL_MINT = "So11111111111111111111111111111111111111112"
-USDC_MINT = "Es9vMFrzaCER6Y2z8uVJ4dj8vBWcy1YH3LWrjdTtuDrk"  # Native USDC
+USDC_MINT = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
 
 def get_swap_quote(from_token, to_token, amount_usdc, slippage=0.5):
     try:
