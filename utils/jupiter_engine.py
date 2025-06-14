@@ -57,7 +57,7 @@ def execute_swap(wallet_address, private_key, from_token, to_token, amount_usdc,
         swap_req = {
             "route": best_route,
             "userPublicKey": wallet_address,
-            "wrapUnwrapSOL": True,
+            "wrapUnwrapSOL": True,  # ✅ Required for SOL ↔ SPL token routing
             "useSharedAccounts": False,
             "useUserAccounts": True,
             "computeUnitPriceMicroLamports": 10000,
