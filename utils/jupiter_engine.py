@@ -16,40 +16,45 @@ JUPITER_SWAP_URL = "https://quote-api.jup.ag/v6/swap"
 SOL_MINT = "So11111111111111111111111111111111111111112"
 USDC_MINT = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
 
-# Solana RPC Endpoint (adjust if using another provider)
+# Solana RPC Endpoint
 SOLANA_RPC = "https://api.mainnet-beta.solana.com"
-
 
 def get_swap_quote(from_token, to_token, amount_usdc, slippage=0.5):
     try:
-        amount_lamports = int(amount_usdc * 10**6)  # USDC has 6 decimals
+        amount_lamports = int(amount_usdc * 10**6)
         params = {
             "inputMint": from_token,
             "outputMint": to_token,
             "amount": amount_lamports,
-            "slippageBps": int(slippage * 100),  # e.g. 50 for 0.5%
+            "slippageBps": int(slippage * 100),
             "onlyDirectRoutes": False
         }
-        print(f"🔍 Requesting Jupiter quote: {params}")
+        url = f"{JUPITER_QUOTE_URL}?inputMint={from_token}&outputMint={to_token}&amount={amount_lamports}&slippageBps={int(slippage * 100)}"
+        print(f"🛰 Jupiter API Request: {url}")
         res = requests.get(JUPITER_QUOTE_URL, params=params, timeout=10)
         res.raise_for_status()
-        return res.json()
+        data = res.json()
+        print("📦 Jupiter API Response:")
+        print(json.dumps(data, indent=2))
+        return data
     except Exception as e:
         print(f"[❌ Jupiter Quote Error] {e}")
         return {}
-
 
 def execute_swap(wallet_address, private_key, from_token, to_token, amount_usdc, slippage=0.5):
     try:
         print(f"🔁 Initiating Jupiter Swap | ${amount_usdc} {from_token} → {to_token}")
         quote = get_swap_quote(from_token, to_token, amount_usdc, slippage)
 
-        if not quote or "routes" not in quote or not quote["routes"]:
+        if not quote or "routes" not in quote:
+            print("❌ Jupiter response missing 'routes' key.")
+            return {"success": False, "error": "No valid routes from Jupiter"}
+        if not quote["routes"]:
+            print("❌ Jupiter returned 0 routes.")
             return {"success": False, "error": "No valid routes from Jupiter"}
 
         route = quote["routes"][0]
 
-        # Prepare transaction
         swap_req = {
             "route": route,
             "userPublicKey": wallet_address,
@@ -57,17 +62,18 @@ def execute_swap(wallet_address, private_key, from_token, to_token, amount_usdc,
             "useSharedAccounts": True,
             "computeUnitPriceMicroLamports": 10000
         }
+        print("📤 Sending swap request to Jupiter")
         res = requests.post(JUPITER_SWAP_URL, json=swap_req, timeout=10)
         res.raise_for_status()
         swap_tx = res.json()
 
         if "swapTransaction" not in swap_tx:
+            print("❌ Swap response missing transaction data.")
             return {"success": False, "error": "Invalid Jupiter swap response"}
 
         encoded_tx = swap_tx["swapTransaction"]
         tx_data = b64decode(encoded_tx)
 
-        # Sign and send
         client = Client(SOLANA_RPC)
         kp = Keypair.from_bytes(private_key)
         tx = Transaction.deserialize(tx_data)
