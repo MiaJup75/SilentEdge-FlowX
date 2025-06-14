@@ -2,6 +2,9 @@ import os
 import logging
 import traceback
 
+import sys
+sys.stdout.reconfigure(line_buffering=True)
+
 from telegram import (
     Update, InlineKeyboardButton, InlineKeyboardMarkup, ParseMode, Message, InputMediaPhoto
 )
