@@ -552,7 +552,7 @@ def live_buy(update: Update, context: CallbackContext):
 
     update.message.reply_text("💸 Executing live BUY...")
     wallet = get_wallet_address()
-    result = execute_jupiter_trade(wallet, "BUY", TRADE_AMOUNT_USDC, live=True)
+    result = execute_jupiter_trade("BUY", TRADE_AMOUNT_USDC, live=True)
     update.message.reply_text(format_trade_result(result), parse_mode=ParseMode.HTML)
 
 def live_sell(update: Update, context: CallbackContext):
@@ -565,7 +565,7 @@ def live_sell(update: Update, context: CallbackContext):
 
     update.message.reply_text("💸 Executing live SELL...")
     wallet = get_wallet_address()
-    result = execute_jupiter_trade(wallet, "SELL", TRADE_AMOUNT_USDC, live=True)
+    result = execute_jupiter_trade("SELL", TRADE_AMOUNT_USDC, live=True)
     update.message.reply_text(format_trade_result(result), parse_mode=ParseMode.HTML)
 
 # === Run Bot ===
