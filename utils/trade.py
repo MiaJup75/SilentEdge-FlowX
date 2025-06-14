@@ -28,11 +28,12 @@ def execute_jupiter_trade(side, amount_usdc=TRADE_AMOUNT, live=False, slippage=S
             from_token = BASE_TOKEN if side == "BUY" else QUOTE_TOKEN
             to_token = QUOTE_TOKEN if side == "BUY" else BASE_TOKEN
 
-            print(f"📦 Trade Params:")
-            print(f"  - From: {from_token}")
-            print(f"  - To: {to_token}")
-            print(f"  - Amount: ${amount_usdc}")
-            print(f"  - Slippage: {slippage}%")
+            print("📦 Trade Params:")
+            print("→ Side:", side)
+            print("→ From:", from_token)
+            print("→ To:", to_token)
+            print("→ Amount:", amount_usdc)
+            print("→ Slippage:", slippage)
 
             result = execute_swap(
                 wallet_address=str(kp.public_key),
