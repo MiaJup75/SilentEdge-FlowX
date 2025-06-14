@@ -1,15 +1,24 @@
 import requests
-import random
-import time
 import json
+import time
+from solders.keypair import Keypair
+from solana.rpc.api import Client
+from solana.transaction import Transaction
+from solders.pubkey import Pubkey
+from base64 import b64decode
+from utils.signer import load_wallet_from_env
 
 # Jupiter API Endpoints
 JUPITER_QUOTE_URL = "https://quote-api.jup.ag/v6/quote"
 JUPITER_SWAP_URL = "https://quote-api.jup.ag/v6/swap"
 
-# Token Mints (can be moved to config.py later)
+# Token Mints
 SOL_MINT = "So11111111111111111111111111111111111111112"
 USDC_MINT = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
+
+# Solana RPC Endpoint (adjust if using another provider)
+SOLANA_RPC = "https://api.mainnet-beta.solana.com"
+
 
 def get_swap_quote(from_token, to_token, amount_usdc, slippage=0.5):
     try:
@@ -18,50 +27,60 @@ def get_swap_quote(from_token, to_token, amount_usdc, slippage=0.5):
             "inputMint": from_token,
             "outputMint": to_token,
             "amount": amount_lamports,
-            "slippageBps": int(slippage * 100),  # 0.5% = 50 BPS
+            "slippageBps": int(slippage * 100),  # e.g. 50 for 0.5%
             "onlyDirectRoutes": False
         }
-        print(f"\U0001F50D [DEBUG] Requesting Jupiter quote with params: {params}")
-        res = requests.get(JUPITER_QUOTE_URL, params=params, timeout=5)
+        print(f"🔍 Requesting Jupiter quote: {params}")
+        res = requests.get(JUPITER_QUOTE_URL, params=params, timeout=10)
         res.raise_for_status()
-        quote = res.json()
-
-        # === Compatibility Patch ===
-        if "routes" in quote:
-            quote_routes = quote["routes"]
-        elif "data" in quote:
-            quote_routes = quote["data"]
-        else:
-            quote_routes = []
-
-        print("\U0001F6E0 Jupiter Quote Response:")
-        print(json.dumps(quote, indent=2))
-
-        return {"routes": quote_routes}
-
+        return res.json()
     except Exception as e:
         print(f"[❌ Jupiter Quote Error] {e}")
         return {}
 
+
 def execute_swap(wallet_address, private_key, from_token, to_token, amount_usdc, slippage=0.5):
     try:
-        print(f"\U0001F501 Executing Jupiter swap: {from_token} → {to_token} | ${amount_usdc} | Slippage: {slippage}%")
+        print(f"🔁 Initiating Jupiter Swap | ${amount_usdc} {from_token} → {to_token}")
         quote = get_swap_quote(from_token, to_token, amount_usdc, slippage)
 
         if not quote or "routes" not in quote or not quote["routes"]:
-            print("⚠️ No valid routes returned from Jupiter.")
             return {"success": False, "error": "No valid routes from Jupiter"}
 
-        # === Simulated Trade Execution ===
-        time.sleep(1)  # Simulate transaction delay
+        route = quote["routes"][0]
+
+        # Prepare transaction
+        swap_req = {
+            "route": route,
+            "userPublicKey": wallet_address,
+            "wrapUnwrapSOL": True,
+            "useSharedAccounts": True,
+            "computeUnitPriceMicroLamports": 10000
+        }
+        res = requests.post(JUPITER_SWAP_URL, json=swap_req, timeout=10)
+        res.raise_for_status()
+        swap_tx = res.json()
+
+        if "swapTransaction" not in swap_tx:
+            return {"success": False, "error": "Invalid Jupiter swap response"}
+
+        encoded_tx = swap_tx["swapTransaction"]
+        tx_data = b64decode(encoded_tx)
+
+        # Sign and send
+        client = Client(SOLANA_RPC)
+        kp = Keypair.from_bytes(private_key)
+        tx = Transaction.deserialize(tx_data)
+        tx.sign([kp])
+        tx_sig = client.send_raw_transaction(tx.serialize(), opts={"skip_preflight": True})
 
         return {
             "success": True,
             "side": f"{from_token}->{to_token}",
             "amount": amount_usdc,
-            "price_estimate": round(random.uniform(0.97, 1.02), 4),
-            "used_route": quote["routes"][0].get("marketInfos", [{}])[0].get("label", "N/A"),
-            "tx_hash": f"sim_tx_{int(time.time())}"
+            "price_estimate": round(float(route.get("outAmount", 0)) / 10**9, 6),
+            "used_route": route["marketInfos"][0].get("label", "N/A"),
+            "tx_hash": tx_sig["result"]
         }
 
     except Exception as e:
