@@ -1,12 +1,13 @@
 import time
 from datetime import datetime
 
-from utils.ata_checker import check_ata_exists
+from utils.ata_checker import has_token_account  # ✅ Correct import
 from utils.db import save_trade
 from utils.signer import load_wallet_from_env
 from utils.format import format_trade_result
 from utils.jupiter_engine import execute_swap
 from config import TRADE_AMOUNT, SLIPPAGE_TOLERANCE, BASE_TOKEN, QUOTE_TOKEN
+
 
 def execute_jupiter_trade(side, amount_usdc=TRADE_AMOUNT, live=False, slippage=SLIPPAGE_TOLERANCE):
     trade_result = {}
@@ -20,10 +21,12 @@ def execute_jupiter_trade(side, amount_usdc=TRADE_AMOUNT, live=False, slippage=S
             "price": f"${mock_price}",
             "tx_hash": "sim_tx_" + str(int(time.time()))
         }
+
     else:
         try:
             kp = load_wallet_from_env()
-            print("🔐 Loaded wallet public key:", str(kp.public_key))
+            wallet_address = str(kp.public_key)
+            print("🔐 Loaded wallet public key:", wallet_address)
             print("🔐 Wallet secret key length:", len(kp.secret_key))
 
             from_token = BASE_TOKEN if side == "BUY" else QUOTE_TOKEN
@@ -36,21 +39,37 @@ def execute_jupiter_trade(side, amount_usdc=TRADE_AMOUNT, live=False, slippage=S
             print("→ Amount:", amount_usdc)
             print("→ Slippage:", slippage)
 
-            # ✅ Check ATA exists before live trade
-            has_ata = check_ata_exists(kp.public_key, from_token)
+            # ✅ ATA Check
+            has_ata = has_token_account(wallet_address, from_token)
             if not has_ata:
-                print("⚠ ATA not found. Suggest sending a small amount to initialize first.")
-                return {
+                alert_msg = (
+                    "⚠️ <b>Token account missing!</b>\n"
+                    "Try sending a small amount of the token to this wallet to initialize it:\n"
+                    f"<code>{wallet_address}</code>"
+                )
+                print(alert_msg)
+                trade_result = {
                     "side": side,
                     "amount": amount_usdc,
-                    "status": "⚠ Jupiter rejected trade: Token account not found. Try sending a small amount first.",
+                    "status": "⚠ Jupiter rejected trade: Token account not found.",
                     "price": "N/A",
-                    "tx_hash": "N/A"
+                    "tx_hash": "N/A",
+                    "alert": alert_msg,
+                    "retry_suggested": True
                 }
+                save_trade({
+                    "timestamp": datetime.utcnow().isoformat(),
+                    "side": trade_result["side"],
+                    "amount": trade_result["amount"],
+                    "status": trade_result["status"],
+                    "price": trade_result["price"],
+                    "tx_hash": trade_result["tx_hash"]
+                })
+                return trade_result
 
-            # Proceed with live swap
+            # ✅ Live swap execution
             result = execute_swap(
-                wallet_address=str(kp.public_key),
+                wallet_address=wallet_address,
                 private_key=kp.secret_key,
                 from_token=from_token,
                 to_token=to_token,
