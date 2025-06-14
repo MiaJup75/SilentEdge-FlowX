@@ -59,6 +59,7 @@ def execute_swap(wallet_address, private_key, from_token, to_token, amount_usdc,
             return {"success": False, "error": "No valid routes from Jupiter"}
 
         route = quote["routes"][0]
+        print("🧭 Using route:", json.dumps(route, indent=2))
 
         swap_req = {
             "route": route,
@@ -69,7 +70,7 @@ def execute_swap(wallet_address, private_key, from_token, to_token, amount_usdc,
             "useSimulator": False
         }
 
-        print("📤 Sending swap request to Jupiter")
+        print("📤 Sending swap request to Jupiter...")
         res = requests.post(JUPITER_SWAP_URL, json=swap_req, timeout=10)
         res.raise_for_status()
         swap_tx = res.json()
@@ -85,8 +86,10 @@ def execute_swap(wallet_address, private_key, from_token, to_token, amount_usdc,
         kp = Keypair.from_bytes(private_key)
         tx = Transaction.deserialize(tx_data)
         tx.sign([kp])
+        print("📡 Broadcasting signed transaction...")
         tx_sig = client.send_raw_transaction(tx.serialize(), opts={"skip_preflight": True})
 
+        print("✅ TX Sent! Signature:", tx_sig["result"])
         return {
             "success": True,
             "side": f"{from_token}->{to_token}",
