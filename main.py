@@ -2,8 +2,6 @@ import os
 import logging
 import traceback
 
-TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
-
 from telegram import (
     Update, InlineKeyboardButton, InlineKeyboardMarkup, ParseMode, Message, InputMediaPhoto
 )
@@ -107,7 +105,7 @@ def button(update: Update, context: CallbackContext):
                 return
 
             query.edit_message_text("⏳ Executing trade...")
-            result = execute_jupiter_trade(get_wallet_address(), action.upper(), TRADE_AMOUNT, live=True)
+            result = execute_jupiter_trade(get_wallet_address(), action.upper(), TRADE_AMOUNT, live=True, slippage=SLIPPAGE_TOLERANCE)
             query.edit_message_text(
                 text=format_trade_result(result),
                 parse_mode=ParseMode.HTML
@@ -179,9 +177,6 @@ def button(update: Update, context: CallbackContext):
             parse_mode=ParseMode.HTML
         )
 
-from config import TRADE_AMOUNT
-from wallet import get_wallet_address
-
 def buy(update: Update, context: CallbackContext):
     try:
         # === Trade Guard ===
@@ -193,7 +188,7 @@ def buy(update: Update, context: CallbackContext):
             return
 
         update.message.reply_text("⏳ Executing buy trade...")
-        result = execute_jupiter_trade(get_wallet_address(), "BUY", TRADE_AMOUNT, live=True)
+        result = execute_jupiter_trade(get_wallet_address(), "BUY", TRADE_AMOUNT, live=True, slippage=SLIPPAGE_TOLERANCE)
         update.message.reply_text(
             format_trade_result(result),
             parse_mode=ParseMode.HTML
@@ -217,7 +212,7 @@ def sell(update: Update, context: CallbackContext):
             return
 
         update.message.reply_text("⏳ Executing sell trade...")
-        result = execute_jupiter_trade(get_wallet_address(), "SELL", TRADE_AMOUNT, live=True)
+        result = execute_jupiter_trade(get_wallet_address(), "SELL", TRADE_AMOUNT, live=True, slippage=SLIPPAGE_TOLERANCE)
         update.message.reply_text(
             format_trade_result(result),
             parse_mode=ParseMode.HTML
