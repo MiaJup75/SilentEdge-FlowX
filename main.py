@@ -50,11 +50,7 @@ logger = logging.getLogger(__name__)
 # === Environment Setup ===
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 TRADE_AMOUNT = float(os.getenv("TRADE_AMOUNT", "5"))
-LIVE_MODE = os.getenv("LIVE_MODE", "false").lower() == "true"
 OWNER_ID = int(os.getenv("OWNER_ID", "0"))
-
-# === Load Wallet ===
-wallet_address = "8xfd61QP7PA2zkeazJvTCYCwLj9eMqodZ1uUW19SEoL6"
 
 # === Bot State Flags ===
 bot_paused = False
@@ -62,8 +58,8 @@ daily_trade_limit = 20
 trades_today = 0
 
 try:
-    balance = get_wallet_balance(wallet_address)
-    print("🧠 Wallet Address:", wallet_address)
+    balance = get_wallet_balance(get_wallet_address())
+    print("🧠 Wallet Address:", get_wallet_address())
     print("💰 Wallet Balance:", balance)
 except Exception as e:
     logger.warning(f"Could not fetch balance: {e}")
@@ -77,8 +73,8 @@ def start(update: Update, context: CallbackContext):
 
     welcome = (
         "🚀 <b>Welcome to Flow X Bot</b>\n\n"
-        f"<b>Wallet:</b> <code>{wallet_address}</code>\n"
-        f"<b>Mode:</b> {'✅ <b>LIVE</b>' if LIVE_MODE else '🧪 <b>SIMULATED</b>'}\n"
+        f"<b>Wallet:</b> <code>{get_wallet_address}</code>\n"
+        "<b>Mode:</b> ✅ <b>LIVE</b>\n"
         f"<b>Trade Size:</b> ${TRADE_AMOUNT:.2f}\n\n"
         "Tap a button or type a command to begin. ⬇️"
     )
@@ -122,7 +118,7 @@ def button(update: Update, context: CallbackContext):
 
         elif action == "balance":
             query.edit_message_text("⏳ Fetching balance...")
-            balances, balance_text = get_wallet_balance(get_wallet_address(wallet))
+            balances, balance_text = get_wallet_balance(get_wallet_address())
             query.edit_message_text(
                 text=balance_text,
                 parse_mode=ParseMode.HTML
@@ -240,7 +236,7 @@ def sell(update: Update, context: CallbackContext):
 def balance(update: Update, context: CallbackContext):
     try:
         update.message.reply_text("⏳ Fetching balance...")
-        balances, balance_text = get_wallet_balance(wallet_address)
+        balances, balance_text = get_wallet_balance(get_wallet_address())
         update.message.reply_text(
             balance_text,
             parse_mode=ParseMode.HTML
@@ -287,7 +283,7 @@ def help_cmd(update: Update, context: CallbackContext):
 def debug(update: Update, context: CallbackContext):
     try:
         update.message.reply_text("⏳ Gathering debug info...")
-        debug_text = format_debug_info(get_wallet_address(wallet), LIVE_MODE, TRADE_AMOUNT)
+        debug_text = format_debug_info(get_wallet_address(), True, TRADE_AMOUNT)
         update.message.reply_text(
             debug_text,
             parse_mode=ParseMode.HTML
@@ -425,26 +421,6 @@ def limit(update: Update, context: CallbackContext):
     except ValueError:
         update.message.reply_text("⚠️ Please enter a valid number.")
 
-
-    logger.info("🚀 Starting Flow X Bot...")
-    updater = Updater(token=TELEGRAM_TOKEN, use_context=True)
-    dispatcher = updater.dispatcher
-    job_queue = updater.job_queue
-
-    # Register slash commands for Telegram interface
-    updater.bot.set_my_commands([
-        ("start", "Launch bot"),
-        ("buy", "Execute Buy Trade"),
-        ("sell", "Execute Sell Trade"),
-        ("balance", "Wallet Balance"),
-        ("pnl", "PnL Summary"),
-        ("ping", "Jupiter Check"),
-        ("help", "Help Menu"),
-        ("debug", "Bot Status"),
-        ("menu", "Show Buttons"),
-        ("aiprompt", "Ask ChatGPT")
-    ])
-
     PORT = int(os.environ.get("PORT", "10000"))
     WEBHOOK_URL = os.environ.get("WEBHOOK_URL")
 
@@ -528,11 +504,6 @@ def main():
 # === Timezone Setup + Imports ===
 import pytz
 import datetime
-from telegram import Update, ParseMode
-from utils.reporting import send_daily_pnl_chart
-
-# Load bot token
-TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 
 # Set timezone
 bkk_tz = pytz.timezone("Asia/Bangkok")
