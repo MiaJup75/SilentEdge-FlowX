@@ -417,18 +417,7 @@ def limit(update: Update, context: CallbackContext):
     WEBHOOK_URL = os.environ.get("WEBHOOK_URL")
 
 from keep_alive import run as keep_alive_server
-import threading
-
-# Start keep-alive Flask server in background
-threading.Thread(target=keep_alive_server).start()
-    
-    updater.start_webhook(
-        listen="0.0.0.0",
-        port=PORT,
-        url_path=TELEGRAM_TOKEN,
-        webhook_url=f"{WEBHOOK_URL}/{TELEGRAM_TOKEN}"
-    )
-        
+import threading        
 
 # === Bot Launcher ===
 def main():
@@ -440,6 +429,18 @@ def main():
     updater = Updater(token=TELEGRAM_TOKEN, use_context=True)
     dispatcher = updater.dispatcher
     job_queue = updater.job_queue
+
+    # Start keep-alive Flask server in background
+    from keep_alive import run as keep_alive_server
+    import threading
+    threading.Thread(target=keep_alive_server).start()
+
+    updater.start_webhook(
+        listen="0.0.0.0",
+        port=PORT,
+        url_path=TELEGRAM_TOKEN,
+        webhook_url=f"{WEBHOOK_URL}/{TELEGRAM_TOKEN}"
+    )
 
     # ✅ Register slash commands for Telegram interface
     updater.bot.set_my_commands([
