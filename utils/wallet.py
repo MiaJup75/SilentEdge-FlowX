@@ -5,17 +5,17 @@ from solana.publickey import PublicKey
 from solana.rpc.types import TokenAccountOpts
 from spl.token.instructions import get_associated_token_address
 
-# === Token Definitions (DexScreener Mint Addresses) ===
+# === Token Definitions (Canonical SPL Mints) ===
 TOKEN_PAIRS = {
     "SOL": "So11111111111111111111111111111111111111112",
-    "USDC": "Es9vMFrzaCERsbyzNKzD4DM6YkT6rzdEDHHZLCXh4MfP",
+    "USDC": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
     "wBTC": "9n4nbM75f5Ui33ZbPYXn59EwSgE8CGsHtAeTH5YFeJ9E",
     "wETH": "7vfCXTz6Xn9PafWz6ZrYT4hwTnTqQZKrj6kzzF7QjZqx",
     "wXRP": "6p9hY3F7v2KQhRJgkzGwXeMTufKYdcG89h6K9bGVznhu"
 }
 
 TOKEN_MINTS = {
-    "USDC": "Es9vMFrzaCERsbyzNKzD4DM6YkT6rzdEDHHZLCXh4MfP",
+    "USDC": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
     "wBTC": "9n4nbM75f5Ui33ZbPYXn59EwSgE8CGsHtAeTH5YFeJ9E",
     "wETH": "7vfCXTz6Xn9PafWz6ZrYT4hwTnTqQZKrj6kzzF7QjZqx",
     "wXRP": "6p9hY3F7v2KQhRJgkzGwXeMTufKYdcG89h6K9bGVznhu"
@@ -58,16 +58,14 @@ def get_wallet_balance(wallet_address: str) -> tuple:
                 result = client.get_balance(pubkey)
                 amount = result.get("result", {}).get("value", 0) / 1_000_000_000
             else:
-                # ✅ Use proper TokenAccountOpts to ensure accurate fetch
                 token_accounts = client.get_token_accounts_by_owner(
                     pubkey,
                     TokenAccountOpts(mint=PublicKey(mint_address))
                 )
-
                 amount = 0.0
                 if token_accounts.get("result", {}).get("value"):
-                    token_account = token_accounts["result"]["value"][0]["pubkey"]
-                    token_info = client.get_token_account_balance(PublicKey(token_account))
+                    ata_address = token_accounts["result"]["value"][0]["pubkey"]
+                    token_info = client.get_token_account_balance(PublicKey(ata_address))
                     amount = float(token_info["result"]["value"].get("uiAmount", 0))
 
             price = fetch_price(mint_address)
