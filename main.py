@@ -45,7 +45,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-from config import TRADE_AMOUNT, OWNER_ID, TELEGRAM_TOKEN, LIVE_MODE, PORT, WEBHOOK_URL, SLIPPAGE_TOLERANCE
+from config import TRADE_AMOUNT, OWNER_ID, TELEGRAM_TOKEN, LIVE_MODE, PORT, WEBHOOK_URL, SLIPPAGE_TOLERANCE, BASE_TOKEN, QUOTE_TOKEN
 
 
 # === Debug Output for Confirmation ===
