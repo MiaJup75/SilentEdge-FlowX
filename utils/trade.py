@@ -80,14 +80,14 @@ def execute_jupiter_trade(side, amount_usdc=10.0, live=False):
 
 
 def live_buy(update: Update, context: CallbackContext):
-    from config import TRADE_AMOUNT_USDC
+    from config import TRADE_AMOUNT
     update.message.reply_text("⏳ Executing LIVE BUY (USDC → SOL)...")
     result = execute_jupiter_trade("BUY", TRADE_AMOUNT_USDC, live=True)
     update.message.reply_text(format_trade_result(result), parse_mode="HTML")
 
 
 def live_sell(update: Update, context: CallbackContext):
-    from config import TRADE_AMOUNT_USDC
+    from config import TRADE_AMOUNT
     update.message.reply_text("⏳ Executing LIVE SELL (SOL → USDC)...")
     result = execute_jupiter_trade("SELL", TRADE_AMOUNT_USDC, live=True)
     update.message.reply_text(format_trade_result(result), parse_mode="HTML")
