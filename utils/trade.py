@@ -2,7 +2,6 @@
 
 import os
 import time
-import random
 from datetime import datetime
 from telegram import Update
 from telegram.ext import CallbackContext
@@ -11,11 +10,15 @@ from utils.signer import load_wallet_from_env
 from utils.format import format_trade_result
 from utils.jupiter_engine import execute_swap
 
-def execute_jupiter_trade(side, amount_usdc=50.0, live=False):
+# Correct Solana mints
+USDC_MINT = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
+SOL_MINT = "So11111111111111111111111111111111111111112"
+
+def execute_jupiter_trade(side, amount_usdc=10.0, live=False):
     trade_result = {}
 
     if not live:
-        mock_price = round(random.uniform(0.98, 1.02), 4)
+        mock_price = round(1 / 25 + (0.01 * (0.5 - time.time() % 1)), 4)
         trade_result = {
             "side": side,
             "amount": amount_usdc,
@@ -26,8 +29,9 @@ def execute_jupiter_trade(side, amount_usdc=50.0, live=False):
     else:
         try:
             kp = load_wallet_from_env()
-            from_token = "So11111111111111111111111111111111111111112"  # SOL (mock)
-            to_token = "Es9vMFrzaCER6Y2z8uVJ4dj8vBWcy1YH3LWrjdTtuDrk"  # USDC
+
+            from_token = USDC_MINT if side == "BUY" else SOL_MINT
+            to_token   = SOL_MINT if side == "BUY" else USDC_MINT
 
             result = execute_swap(
                 wallet_address=str(kp.public_key),
@@ -63,7 +67,6 @@ def execute_jupiter_trade(side, amount_usdc=50.0, live=False):
                 "tx_hash": "N/A"
             }
 
-    # Save to DB
     save_trade({
         "timestamp": datetime.utcnow().isoformat(),
         "side": trade_result["side"],
@@ -78,13 +81,13 @@ def execute_jupiter_trade(side, amount_usdc=50.0, live=False):
 
 def live_buy(update: Update, context: CallbackContext):
     from config import TRADE_AMOUNT_USDC
-    update.message.reply_text("⏳ Executing LIVE BUY...")
+    update.message.reply_text("⏳ Executing LIVE BUY (USDC → SOL)...")
     result = execute_jupiter_trade("BUY", TRADE_AMOUNT_USDC, live=True)
     update.message.reply_text(format_trade_result(result), parse_mode="HTML")
 
 
 def live_sell(update: Update, context: CallbackContext):
     from config import TRADE_AMOUNT_USDC
-    update.message.reply_text("⏳ Executing LIVE SELL...")
+    update.message.reply_text("⏳ Executing LIVE SELL (SOL → USDC)...")
     result = execute_jupiter_trade("SELL", TRADE_AMOUNT_USDC, live=True)
     update.message.reply_text(format_trade_result(result), parse_mode="HTML")
