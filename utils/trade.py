@@ -27,7 +27,7 @@ def execute_jupiter_trade(wallet, side, amount_usdc=TRADE_AMOUNT, live=False, sl
         }
     else:
         try:
-            kp = load_wallet_from_env(wallet)
+            kp = load_wallet_from_env()
             from_token = USDC_MINT if side == "BUY" else SOL_MINT
             to_token = SOL_MINT if side == "BUY" else USDC_MINT
 
