@@ -1,17 +1,19 @@
+# config.py
+
 import os
 import json
 
-# Load environment variables
+# Load secrets and tokens from Render ENV
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 TELEGRAM_USER_ID = int(os.getenv("TELEGRAM_USER_ID"))
-SOLFLARE_PRIVATE_KEY = os.getenv("SOLFLARE_PRIVATE_KEY")
+PHANTOM_SECRET_KEY = os.getenv("PHANTOM_SECRET_KEY")
 JUPITER_API_URL = "https://quote-api.jup.ag/v6"
 
-# Load config.json
+# Load config.json for all strategy settings
 with open("config.json", "r") as f:
     CONFIG = json.load(f)
 
-# Accessible parameters
+# Core strategy parameters
 BASE_TOKEN = CONFIG["base_token"]
 QUOTE_TOKEN = CONFIG["quote_token"]
 TRADE_AMOUNT = CONFIG["trade_amount"]
