@@ -1,10 +1,11 @@
 {
-  "base_token": "USDC",
-  "quote_token": "SOL",
+  "base_token": "So11111111111111111111111111111111111111112",
+  "quote_token": "Es9vMFrzaCER4F7hco8bW5brttjkM9okPdsSXRUbzfyu",
   "trade_amount": 20,
-  "take_profit_percent": 1,
-  "stop_loss_percent": 0.5,
-  "cooldown_minutes": 2,
-  "trading_mode": "autonomous",
-  "auto_trade_enabled": true
+  "take_profit_percent": 1.2,
+  "stop_loss_percent": 0.8,
+  "cooldown_minutes": 5,
+  "trading_mode": "LIVE",
+  "auto_trade_enabled": true,
+  "slippage_tolerance": 0.5
 }
