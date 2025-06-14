@@ -1,6 +1,6 @@
 {
-  "base_token": "7XSjASvj1K9m7BLkHbQ9y5UJ6hE63YxUswPtvUtBPaJ7",  // wSOL
-  "quote_token": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",  // USDC
+  "base_token": "7XSjASvj1K9m7BLkHbQ9y5UJ6hE63YxUswPtvUtBPaJ7",
+  "quote_token": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
   "trade_amount": 5,
   "slippage_tolerance": 0.5,
   "cooldown_minutes": 5,
