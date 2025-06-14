@@ -3,6 +3,8 @@ import sqlite3
 from datetime import datetime, timedelta
 import random
 import os
+import base64
+from solana.keypair import Keypair
 
 DB_PATH = "trades.db"
 
@@ -43,3 +45,18 @@ def simulate_test_trades(n=10):
     conn.commit()
     conn.close()
     print(f"✅ {n} test trades inserted.")
+
+def debug_loaded_key():
+    b64 = os.getenv("SOLANA_SECRET_KEY")
+    if not b64:
+        print("❌ SOLANA_SECRET_KEY is missing!")
+        return
+
+    try:
+        key_bytes = base64.b64decode(b64)
+        kp = Keypair.from_secret_key(key_bytes)
+        print("✅ Loaded KeyPair")
+        print("→ Public Key:", kp.public_key)
+        print("→ Secret Key Length:", len(kp.secret_key))
+    except Exception as e:
+        print("❌ Error loading key:", e)
