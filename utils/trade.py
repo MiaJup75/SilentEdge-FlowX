@@ -3,7 +3,7 @@ from datetime import datetime
 
 from utils.ata_checker import check_ata_exists
 from utils.db import save_trade
-from utils.signer import load_wallet_from_env
+from utils.signer import load_wallet_from_env, load_wallet_public_key
 from utils.format import format_trade_result
 from utils.jupiter_engine import execute_swap
 from config import TRADE_AMOUNT, SLIPPAGE_TOLERANCE, BASE_TOKEN, QUOTE_TOKEN
@@ -25,13 +25,11 @@ def execute_jupiter_trade(side, amount_usdc=TRADE_AMOUNT, live=False, slippage=S
     else:
         try:
             kp = load_wallet_from_env()
-            wallet_address = str(kp.public_key)
+            wallet_address = str(load_wallet_public_key())
             print("🔐 Loaded wallet public key:", wallet_address)
             print("🔐 Wallet secret key length:", len(kp.secret_key))
 
-            # ✅ Correct token direction logic:
-            # BUY = spend QUOTE (USDC), get BASE (SOL)
-            # SELL = spend BASE (SOL), get QUOTE (USDC)
+            # ✅ Token direction logic
             from_token = QUOTE_TOKEN if side == "BUY" else BASE_TOKEN
             to_token = BASE_TOKEN if side == "BUY" else QUOTE_TOKEN
 
