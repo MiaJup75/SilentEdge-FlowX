@@ -447,27 +447,7 @@ def main():
         url_path=TELEGRAM_TOKEN,
         webhook_url=f"{WEBHOOK_URL}/{TELEGRAM_TOKEN}"
     )
-           # Register command handlers
-    dispatcher.add_handler(CommandHandler("start", start))
-    dispatcher.add_handler(CommandHandler("buy", buy))
-    dispatcher.add_handler(CommandHandler("sell", sell))
-    dispatcher.add_handler(CommandHandler("balance", balance))
-    dispatcher.add_handler(CommandHandler("pnl", pnl))
-    dispatcher.add_handler(CommandHandler("ping", ping))
-    dispatcher.add_handler(CommandHandler("help", help_cmd))
-    dispatcher.add_handler(CommandHandler("debug", debug))
-    dispatcher.add_handler(CommandHandler("menu", menu))
-    dispatcher.add_handler(CommandHandler("aiprompt", aiprompt))
-    dispatcher.add_handler(CommandHandler("pause", pause))
-    dispatcher.add_handler(CommandHandler("limit", limit))
-    dispatcher.add_handler(CommandHandler("pnl", pnl))
-    dispatcher.add_handler(CallbackQueryHandler(handle_pnl_button, pattern="^pnl_"))
-
-    # Handle inline button callbacks
-    dispatcher.add_handler(CallbackQueryHandler(button))
-
-    # Catch-all for non-command messages
-    dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, fallback_message))
+        
 
 # === Bot Launcher ===
 def main():
@@ -512,6 +492,12 @@ def main():
 
     dispatcher.add_handler(CallbackQueryHandler(handle_pnl_button, pattern="^pnl:"))
     dispatcher.add_handler(CallbackQueryHandler(button))
+    dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, fallback_message))
+
+     # Handle inline button callbacks
+    dispatcher.add_handler(CallbackQueryHandler(button))
+
+    # Catch-all for non-command messages
     dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, fallback_message))
 
     # ✅ Register scheduled jobs inside main
