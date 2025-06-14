@@ -1,7 +1,7 @@
 import time
 from datetime import datetime
 
-from utils.ata_checker import check_ata_exists  # ✅ Corrected import and usage
+from utils.ata_checker import has_token_account
 from utils.db import save_trade
 from utils.signer import load_wallet_from_env
 from utils.format import format_trade_result
