@@ -68,7 +68,8 @@ def execute_swap(wallet_address, private_key, from_token, to_token, amount_usdc,
             "route": route,
             "userPublicKey": wallet_address,
             "wrapUnwrapSOL": True,
-            "useSharedAccounts": True,
+            "useSharedAccounts": False,
+            "useUserAccounts": True,
             "computeUnitPriceMicroLamports": 10000,
             "useSimulator": False
         }
