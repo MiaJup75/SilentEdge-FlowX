@@ -105,7 +105,13 @@ def button(update: Update, context: CallbackContext):
                 return
 
             query.edit_message_text("⏳ Executing trade...")
-            result = execute_jupiter_trade(get_wallet_address(), action.upper(), TRADE_AMOUNT, live=True, slippage=SLIPPAGE_TOLERANCE)
+            result = execute_jupiter_trade(
+                wallet=get_wallet_address(),
+                side=action.upper(),
+                amount_usdc=TRADE_AMOUNT,
+                live=True,
+                slippage=SLIPPAGE_TOLERANCE
+            )
             query.edit_message_text(
                 text=format_trade_result(result),
                 parse_mode=ParseMode.HTML
@@ -188,7 +194,13 @@ def buy(update: Update, context: CallbackContext):
             return
 
         update.message.reply_text("⏳ Executing buy trade...")
-        result = execute_jupiter_trade(get_wallet_address(), "BUY", TRADE_AMOUNT, live=True, slippage=SLIPPAGE_TOLERANCE)
+        result = execute_jupiter_trade(
+            wallet=get_wallet_address(),
+            side="BUY",
+            amount_usdc=TRADE_AMOUNT,
+            live=True,
+            slippage=SLIPPAGE_TOLERANCE
+        )
         update.message.reply_text(
             format_trade_result(result),
             parse_mode=ParseMode.HTML
@@ -212,7 +224,13 @@ def sell(update: Update, context: CallbackContext):
             return
 
         update.message.reply_text("⏳ Executing sell trade...")
-        result = execute_jupiter_trade(get_wallet_address(), "SELL", TRADE_AMOUNT, live=True, slippage=SLIPPAGE_TOLERANCE)
+        result = execute_jupiter_trade(
+            wallet=get_wallet_address(),
+            side="SELL",
+            amount_usdc=TRADE_AMOUNT,
+            live=True,
+            slippage=SLIPPAGE_TOLERANCE
+        )
         update.message.reply_text(
             format_trade_result(result),
             parse_mode=ParseMode.HTML
