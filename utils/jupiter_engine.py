@@ -1,12 +1,14 @@
+# utils/jupiter_engine.py
+
 import requests
 import json
 import time
 import sys
+import base64
 from solders.keypair import Keypair
-from solana.rpc.api import Client
-from solana.transaction import Transaction
 from solders.pubkey import Pubkey
-from base64 import b64decode
+from solana.transaction import Transaction
+from solana.rpc.api import Client
 from utils.signer import load_wallet_from_env
 
 # === Jupiter API Endpoints ===
@@ -19,9 +21,11 @@ USDC_MINT = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
 
 # === Solana RPC ===
 SOLANA_RPC = "https://api.mainnet-beta.solana.com"
+client = Client(SOLANA_RPC)
 
-# === Flush stdout for Render ===
+# === Flush stdout for Render logs ===
 sys.stdout.reconfigure(line_buffering=True)
+
 
 def get_swap_quote(from_token, to_token, amount_usdc, slippage=0.5):
     try:
@@ -32,7 +36,7 @@ def get_swap_quote(from_token, to_token, amount_usdc, slippage=0.5):
             "amount": amount_lamports,
             "slippageBps": int(slippage * 100),
             "onlyDirectRoutes": False,
-            "swapMode": "ExactIn"  # ✅ Ensures Jupiter returns a usable route
+            "swapMode": "ExactIn"
         }
         headers = {
             "Origin": "https://jup.ag",
@@ -42,29 +46,21 @@ def get_swap_quote(from_token, to_token, amount_usdc, slippage=0.5):
         print(f"🛰 Jupiter API Request: {JUPITER_QUOTE_URL} with {params}")
         res = requests.get(JUPITER_QUOTE_URL, params=params, headers=headers, timeout=10)
         res.raise_for_status()
-        data = res.json()
-
-        print("📦 Jupiter Quote Response:")
-        print(json.dumps(data, indent=2))
-        return data
+        return res.json()
     except Exception as e:
         print(f"[❌ Jupiter Quote Error] {e}")
         return {}
 
+
 def execute_swap(wallet_address, private_key, from_token, to_token, amount_usdc, slippage=0.5):
     try:
-        print(f"🔁 Initiating Jupiter Swap | ${amount_usdc} {from_token} → {to_token}")
+        print(f"🔁 Executing Swap | {amount_usdc} {from_token} → {to_token}")
         quote = get_swap_quote(from_token, to_token, amount_usdc, slippage)
 
-        if not quote or "routes" not in quote:
-            print("❌ Jupiter response missing 'routes' key.")
-            return {"success": False, "error": "No valid routes from Jupiter"}
-        if not quote["routes"]:
-            print("❌ Jupiter returned 0 routes.")
-            return {"success": False, "error": "No valid routes from Jupiter"}
+        if not quote or "routes" not in quote or not quote["routes"]:
+            return {"success": False, "error": "No valid Jupiter routes"}
 
         route = quote["routes"][0]
-
         swap_req = {
             "route": route,
             "userPublicKey": wallet_address,
@@ -75,21 +71,25 @@ def execute_swap(wallet_address, private_key, from_token, to_token, amount_usdc,
             "useSimulator": False
         }
 
-        print("📤 Sending swap request to Jupiter")
+        print("📤 Requesting Jupiter Swap TX...")
         res = requests.post(JUPITER_SWAP_URL, json=swap_req, timeout=10)
         res.raise_for_status()
         swap_tx = res.json()
 
         if "swapTransaction" not in swap_tx:
-            print("❌ Swap response missing transaction data.")
-            return {"success": False, "error": "Invalid Jupiter swap response"}
+            return {"success": False, "error": "Missing swap transaction from Jupiter"}
 
         encoded_tx = swap_tx["swapTransaction"]
-        tx_data = b64decode(encoded_tx)
-
-        client = Client(SOLANA_RPC)
-        kp = Keypair.from_bytes(private_key)
+        tx_data = base64.b64decode(encoded_tx)
         tx = Transaction.deserialize(tx_data)
+
+        # === Add blockhash + fee payer ===
+        print("🔑 Signing transaction...")
+        kp = Keypair.from_bytes(private_key)
+        blockhash = client.get_latest_blockhash()["result"]["value"]["blockhash"]
+        tx.recent_blockhash = blockhash
+        tx.fee_payer = kp.pubkey()
+
         tx.sign([kp])
         tx_sig = client.send_raw_transaction(tx.serialize(), opts={"skip_preflight": True})
 
@@ -97,7 +97,7 @@ def execute_swap(wallet_address, private_key, from_token, to_token, amount_usdc,
             "success": True,
             "side": f"{from_token}->{to_token}",
             "amount": amount_usdc,
-            "price_estimate": round(float(route.get("outAmount", 0)) / 10**9, 6),
+            "price_estimate": round(float(route.get("outAmount", 0)) / 10**6, 6),
             "used_route": route["marketInfos"][0].get("label", "N/A"),
             "tx_hash": tx_sig["result"]
         }
