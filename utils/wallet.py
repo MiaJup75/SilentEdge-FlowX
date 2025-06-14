@@ -15,13 +15,6 @@ TOKEN_PAIRS = {
     "wXRP": "6p9hY3F7v2KQhRJgkzGwXeMTufKYdcG89h6K9bGVznhu"
 }
 
-TOKEN_MINTS = {
-    "USDC": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
-    "wBTC": "9n4nbM75f5Ui33ZbPYXn59EwSgE8CGsHtAeTH5YFeJ9E",
-    "wETH": "7vfCXTz6Xn9PafWz6ZrYT4hwTnTqQZKrj6kzzF7QjZqx",
-    "wXRP": "6p9hY3F7v2KQhRJgkzGwXeMTufKYdcG89h6K9bGVznhu"
-}
-
 TOKEN_EMOJIS = {
     "SOL": "🪙",
     "USDC": "💵",
@@ -33,15 +26,11 @@ TOKEN_EMOJIS = {
 SOLANA_RPC_URL = os.getenv("SOLANA_RPC_URL", "https://api.mainnet-beta.solana.com")
 client = Client(SOLANA_RPC_URL)
 
-# === Get Wallet Address (cleaned) ===
+# === Get Wallet Address ===
 def get_wallet_address(wallet=None):
     if wallet:
         return str(wallet.public_key)
-    env_addr = os.getenv("PHANTOM_WALLET_ADDRESS")
-    if env_addr:
-        return env_addr
-    else:
-        return str(load_wallet_from_env().public_key)
+    return os.getenv("SOLANA_WALLET_ADDRESS", str(load_wallet_from_env().public_key))
 
 # === Price Fetcher ===
 def fetch_price(mint_address: str) -> float:
