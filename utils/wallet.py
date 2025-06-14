@@ -4,6 +4,7 @@ from solana.rpc.api import Client
 from solana.publickey import PublicKey
 from solana.rpc.types import TokenAccountOpts
 from spl.token.instructions import get_associated_token_address
+from utils.signer import load_wallet_from_env
 
 # === Token Definitions (Canonical SPL Mints) ===
 TOKEN_PAIRS = {
@@ -32,9 +33,15 @@ TOKEN_EMOJIS = {
 SOLANA_RPC_URL = os.getenv("SOLANA_RPC_URL", "https://api.mainnet-beta.solana.com")
 client = Client(SOLANA_RPC_URL)
 
-# === Get Wallet Address ===
+# === Get Wallet Address (cleaned) ===
 def get_wallet_address(wallet=None):
-    return os.getenv("PHANTOM_WALLET_ADDRESS", "8xfd61QP7PA2zkeazJvTCYCwLj9eMqodZ1uUW19SEoL6")
+    if wallet:
+        return str(wallet.public_key)
+    env_addr = os.getenv("PHANTOM_WALLET_ADDRESS")
+    if env_addr:
+        return env_addr
+    else:
+        return str(load_wallet_from_env().public_key)
 
 # === Price Fetcher ===
 def fetch_price(mint_address: str) -> float:
