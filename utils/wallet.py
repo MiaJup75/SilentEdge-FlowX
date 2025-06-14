@@ -2,6 +2,7 @@ import os
 import requests
 from solana.rpc.api import Client
 from solana.publickey import PublicKey
+from solana.rpc.types import TokenAccountOpts
 from spl.token.instructions import get_associated_token_address
 
 # === Token Definitions (DexScreener Mint Addresses) ===
@@ -57,12 +58,16 @@ def get_wallet_balance(wallet_address: str) -> tuple:
                 result = client.get_balance(pubkey)
                 amount = result.get("result", {}).get("value", 0) / 1_000_000_000
             else:
-                ata = get_associated_token_address(pubkey, PublicKey(mint_address))
-                token_info = client.get_token_account_balance(ata)
+                # ✅ Use proper TokenAccountOpts to ensure accurate fetch
+                token_accounts = client.get_token_accounts_by_owner(
+                    pubkey,
+                    TokenAccountOpts(mint=PublicKey(mint_address))
+                )
 
-                # Patch: fallback to 0 if ATA doesn't exist or is empty
                 amount = 0.0
-                if token_info.get("result") and token_info["result"].get("value"):
+                if token_accounts.get("result", {}).get("value"):
+                    token_account = token_accounts["result"]["value"][0]["pubkey"]
+                    token_info = client.get_token_account_balance(PublicKey(token_account))
                     amount = float(token_info["result"]["value"].get("uiAmount", 0))
 
             price = fetch_price(mint_address)
