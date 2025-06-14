@@ -106,6 +106,7 @@ def button(update: Update, context: CallbackContext):
 
             query.edit_message_text("⏳ Executing trade...")
             result = execute_jupiter_trade(
+                wallet=get_wallet_address(),
                 side=action.upper(),
                 amount_usdc=TRADE_AMOUNT,
                 live=True,
@@ -194,6 +195,7 @@ def buy(update: Update, context: CallbackContext):
 
         update.message.reply_text("⏳ Executing buy trade...")
         result = execute_jupiter_trade(
+            wallet=get_wallet_address(),
             side="BUY",
             amount_usdc=TRADE_AMOUNT,
             live=True,
@@ -223,6 +225,7 @@ def sell(update: Update, context: CallbackContext):
 
         update.message.reply_text("⏳ Executing sell trade...")
         result = execute_jupiter_trade(
+            wallet=get_wallet_address(),
             side="SELL",
             amount_usdc=TRADE_AMOUNT,
             live=True,
