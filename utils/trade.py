@@ -1,5 +1,6 @@
 import time
 from datetime import datetime
+
 from utils.db import save_trade
 from utils.signer import load_wallet_from_env
 from utils.format import format_trade_result
@@ -21,10 +22,17 @@ def execute_jupiter_trade(side, amount_usdc=TRADE_AMOUNT, live=False, slippage=S
     else:
         try:
             kp = load_wallet_from_env()
+            print("🔐 Loaded wallet public key:", str(kp.public_key))
+            print("🔐 Wallet secret key length:", len(kp.secret_key))
 
-            # ✅ This is the FIX:
-            from_token = QUOTE_TOKEN if side == "BUY" else BASE_TOKEN
-            to_token = BASE_TOKEN if side == "BUY" else QUOTE_TOKEN
+            from_token = BASE_TOKEN if side == "BUY" else QUOTE_TOKEN
+            to_token = QUOTE_TOKEN if side == "BUY" else BASE_TOKEN
+
+            print(f"📦 Trade Params:")
+            print(f"  - From: {from_token}")
+            print(f"  - To: {to_token}")
+            print(f"  - Amount: ${amount_usdc}")
+            print(f"  - Slippage: {slippage}%")
 
             result = execute_swap(
                 wallet_address=str(kp.public_key),
@@ -34,6 +42,8 @@ def execute_jupiter_trade(side, amount_usdc=TRADE_AMOUNT, live=False, slippage=S
                 amount_usdc=amount_usdc,
                 slippage=slippage
             )
+
+            print("📬 Swap Result:", result)
 
             if result["success"]:
                 trade_result = {
@@ -53,6 +63,7 @@ def execute_jupiter_trade(side, amount_usdc=TRADE_AMOUNT, live=False, slippage=S
                 }
 
         except Exception as e:
+            print("🔥 UNCAUGHT EXCEPTION IN TRADE:", str(e))
             trade_result = {
                 "side": side,
                 "amount": amount_usdc,
