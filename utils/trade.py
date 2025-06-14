@@ -13,7 +13,7 @@ from config import TRADE_AMOUNT, SLIPPAGE_TOLERANCE
 USDC_MINT = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
 SOL_MINT = "So11111111111111111111111111111111111111112"
 
-def execute_jupiter_trade(side, amount_usdc=TRADE_AMOUNT, live=False, slippage=SLIPPAGE_TOLERANCE):
+def execute_jupiter_trade(wallet, side, amount_usdc=TRADE_AMOUNT, live=False, slippage=SLIPPAGE_TOLERANCE):
     trade_result = {}
 
     if not live:
@@ -27,7 +27,7 @@ def execute_jupiter_trade(side, amount_usdc=TRADE_AMOUNT, live=False, slippage=S
         }
     else:
         try:
-            kp = load_wallet_from_env()
+            kp = load_wallet_from_env(wallet)
             from_token = USDC_MINT if side == "BUY" else SOL_MINT
             to_token = SOL_MINT if side == "BUY" else USDC_MINT
 
