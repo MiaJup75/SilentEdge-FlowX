@@ -1,14 +1,11 @@
 import time
 from datetime import datetime
+
 from utils.db import save_trade
 from utils.signer import load_wallet_from_env
 from utils.format import format_trade_result
 from utils.jupiter_engine import execute_swap
-from config import TRADE_AMOUNT, SLIPPAGE_TOLERANCE
-
-# Solana token mints
-USDC_MINT = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
-SOL_MINT = "So11111111111111111111111111111111111111112"
+from config import TRADE_AMOUNT, SLIPPAGE_TOLERANCE, BASE_TOKEN, QUOTE_TOKEN
 
 def execute_jupiter_trade(side, amount_usdc=TRADE_AMOUNT, live=False, slippage=SLIPPAGE_TOLERANCE):
     trade_result = {}
@@ -25,8 +22,9 @@ def execute_jupiter_trade(side, amount_usdc=TRADE_AMOUNT, live=False, slippage=S
     else:
         try:
             kp = load_wallet_from_env()
-            from_token = USDC_MINT if side == "BUY" else SOL_MINT
-            to_token = SOL_MINT if side == "BUY" else USDC_MINT
+            # ✅ Pull tokens dynamically from config
+            from_token = BASE_TOKEN if side == "BUY" else QUOTE_TOKEN
+            to_token = QUOTE_TOKEN if side == "BUY" else BASE_TOKEN
 
             result = execute_swap(
                 wallet_address=str(kp.public_key),
