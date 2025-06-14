@@ -47,10 +47,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# === Environment Setup ===
-TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
-TRADE_AMOUNT = float(os.getenv("TRADE_AMOUNT", "5"))
-OWNER_ID = int(os.getenv("OWNER_ID", "0"))
+from config import TRADE_AMOUNT, OWNER_ID, TELEGRAM_TOKEN, LIVE_MODE, PORT, WEBHOOK_URL
 
 # === Bot State Flags ===
 bot_paused = False
@@ -73,7 +70,7 @@ def start(update: Update, context: CallbackContext):
 
     welcome = (
         "🚀 <b>Welcome to Flow X Bot</b>\n\n"
-        f"<b>Wallet:</b> <code>{get_wallet_address}</code>\n"
+        f"<b>Wallet:</b> <code>{get_wallet_address()}</code>\n"
         "<b>Mode:</b> ✅ <b>LIVE</b>\n"
         f"<b>Trade Size:</b> ${TRADE_AMOUNT:.2f}\n\n"
         "Tap a button or type a command to begin. ⬇️"
@@ -485,16 +482,6 @@ def main():
     job_queue.run_daily(
         send_daily_pnl_chart,
         time=datetime.time(hour=9, minute=0, tzinfo=bkk_tz)
-    )
-
-    # ✅ Start webhook
-    PORT = int(os.environ.get("PORT", "10000"))
-    WEBHOOK_URL = os.environ.get("WEBHOOK_URL")
-    updater.start_webhook(
-        listen="0.0.0.0",
-        port=PORT,
-        url_path=TELEGRAM_TOKEN,
-        webhook_url=f"{WEBHOOK_URL}/{TELEGRAM_TOKEN}"
     )
 
     # ✅ Keep the bot running
