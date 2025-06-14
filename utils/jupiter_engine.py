@@ -21,20 +21,31 @@ def get_swap_quote(from_token, to_token, amount_usdc, slippage=0.5):
             "slippageBps": int(slippage * 100),  # 0.5% = 50 BPS
             "onlyDirectRoutes": False
         }
-        print(f"🔍 [DEBUG] Requesting Jupiter quote with params: {params}")
+        print(f"\U0001F50D [DEBUG] Requesting Jupiter quote with params: {params}")
         res = requests.get(JUPITER_QUOTE_URL, params=params, timeout=5)
         res.raise_for_status()
         quote = res.json()
-        print("🛰 Jupiter Quote Response:")
+
+        # === Compatibility Patch ===
+        if "routes" in quote:
+            quote_routes = quote["routes"]
+        elif "data" in quote:
+            quote_routes = quote["data"]
+        else:
+            quote_routes = []
+
+        print("\U0001F6E0 Jupiter Quote Response:")
         print(json.dumps(quote, indent=2))
-        return quote
+
+        return {"routes": quote_routes}
+
     except Exception as e:
         print(f"[❌ Jupiter Quote Error] {e}")
         return {}
 
 def execute_swap(wallet_address, private_key, from_token, to_token, amount_usdc, slippage=0.5):
     try:
-        print(f"🔁 Executing Jupiter swap: {from_token} → {to_token} | ${amount_usdc} | Slippage: {slippage}%")
+        print(f"\U0001F501 Executing Jupiter swap: {from_token} → {to_token} | ${amount_usdc} | Slippage: {slippage}%")
         quote = get_swap_quote(from_token, to_token, amount_usdc, slippage)
 
         if not quote or "routes" not in quote or not quote["routes"]:
@@ -49,7 +60,7 @@ def execute_swap(wallet_address, private_key, from_token, to_token, amount_usdc,
             "side": f"{from_token}->{to_token}",
             "amount": amount_usdc,
             "price_estimate": round(random.uniform(0.97, 1.02), 4),
-            "used_route": quote["routes"][0]["marketInfos"][0]["label"] if "marketInfos" in quote["routes"][0] else "N/A",
+            "used_route": quote["routes"][0].get("marketInfos", [{}])[0].get("label", "N/A"),
             "tx_hash": f"sim_tx_{int(time.time())}"
         }
 
