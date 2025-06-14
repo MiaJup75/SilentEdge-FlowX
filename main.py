@@ -47,6 +47,15 @@ logger = logging.getLogger(__name__)
 
 from config import TRADE_AMOUNT, OWNER_ID, TELEGRAM_TOKEN, LIVE_MODE, PORT, WEBHOOK_URL, SLIPPAGE_TOLERANCE
 
+
+# === Debug Output for Confirmation ===
+print("🛠 Flow X Config Debug:")
+print("→ BASE:", BASE_TOKEN)
+print("→ QUOTE:", QUOTE_TOKEN)
+print("→ TRADE_AMOUNT:", TRADE_AMOUNT)
+print("→ SLIPPAGE:", SLIPPAGE_TOLERANCE)
+print("→ LIVE_MODE:", LIVE_MODE)
+
 # === Bot State Flags ===
 bot_paused = False
 daily_trade_limit = 20
