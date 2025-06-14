@@ -1,6 +1,7 @@
 import requests
 import json
 import time
+import sys
 from solders.keypair import Keypair
 from solana.rpc.api import Client
 from solana.transaction import Transaction
@@ -8,16 +9,19 @@ from solders.pubkey import Pubkey
 from base64 import b64decode
 from utils.signer import load_wallet_from_env
 
-# Jupiter API Endpoints
+# === Jupiter API Endpoints ===
 JUPITER_QUOTE_URL = "https://quote-api.jup.ag/v6/quote"
 JUPITER_SWAP_URL = "https://quote-api.jup.ag/v6/swap"
 
-# Token Mints
+# === Token Mints ===
 SOL_MINT = "So11111111111111111111111111111111111111112"
 USDC_MINT = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
 
-# Solana RPC Endpoint
+# === Solana RPC ===
 SOLANA_RPC = "https://api.mainnet-beta.solana.com"
+
+# === Flush stdout for Render ===
+sys.stdout.reconfigure(line_buffering=True)
 
 def get_swap_quote(from_token, to_token, amount_usdc, slippage=0.5):
     try:
@@ -59,7 +63,6 @@ def execute_swap(wallet_address, private_key, from_token, to_token, amount_usdc,
             return {"success": False, "error": "No valid routes from Jupiter"}
 
         route = quote["routes"][0]
-        print("🧭 Using route:", json.dumps(route, indent=2))
 
         swap_req = {
             "route": route,
@@ -70,7 +73,7 @@ def execute_swap(wallet_address, private_key, from_token, to_token, amount_usdc,
             "useSimulator": False
         }
 
-        print("📤 Sending swap request to Jupiter...")
+        print("📤 Sending swap request to Jupiter")
         res = requests.post(JUPITER_SWAP_URL, json=swap_req, timeout=10)
         res.raise_for_status()
         swap_tx = res.json()
@@ -86,10 +89,8 @@ def execute_swap(wallet_address, private_key, from_token, to_token, amount_usdc,
         kp = Keypair.from_bytes(private_key)
         tx = Transaction.deserialize(tx_data)
         tx.sign([kp])
-        print("📡 Broadcasting signed transaction...")
         tx_sig = client.send_raw_transaction(tx.serialize(), opts={"skip_preflight": True})
 
-        print("✅ TX Sent! Signature:", tx_sig["result"])
         return {
             "success": True,
             "side": f"{from_token}->{to_token}",
