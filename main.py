@@ -13,7 +13,7 @@ from telegram.ext import (
 )
 
 from utils.wallet import get_wallet_address, get_wallet_balance
-from utils.trade import execute_jupiter_trade, live_buy, live_sell
+from utils.trade import execute_jupiter_trade
 from utils.pnl import calculate_daily_pnl, calculate_auto_pnl
 from utils.format import (
     format_trade_result,
@@ -55,7 +55,6 @@ OWNER_ID = int(os.getenv("OWNER_ID", "0"))
 
 # === Load Wallet ===
 wallet_address = "8xfd61QP7PA2zkeazJvTCYCwLj9eMqodZ1uUW19SEoL6"
-wallet = wallet_address  # compatibility alias
 
 # === Bot State Flags ===
 bot_paused = False
@@ -106,12 +105,20 @@ def button(update: Update, context: CallbackContext):
 
     try:
         if action in ["buy", "sell"]:
+            # === Trade Guard ===
+            if is_paused():
+                query.edit_message_text("⛔ Trading is currently paused.")
+                return
+            if not check_and_increment_trade_count():
+                query.edit_message_text("⚠️ Daily trade limit reached.")
+                return
+
             query.edit_message_text("⏳ Executing trade...")
-            result = execute_jupiter_trade(wallet, action.upper(), TRADE_AMOUNT, LIVE_MODE)
+            result = execute_jupiter_trade(get_wallet_address(), action.upper(), TRADE_AMOUNT, live=True)
             query.edit_message_text(
                 text=format_trade_result(result),
                 parse_mode=ParseMode.HTML
-            )
+             )
 
         elif action == "balance":
             query.edit_message_text("⏳ Fetching balance...")
@@ -121,7 +128,7 @@ def button(update: Update, context: CallbackContext):
                 parse_mode=ParseMode.HTML
             )
 
-        elif data == "pnl":
+        elif action == "pnl":
             report = calculate_auto_pnl()
             summary = format_pnl_summary(report)
             query.edit_message_text(
@@ -418,11 +425,6 @@ def limit(update: Update, context: CallbackContext):
     except ValueError:
         update.message.reply_text("⚠️ Please enter a valid number.")
 
-# === Bot Launcher ===
-def main():
-    if not TELEGRAM_TOKEN:
-        logger.error("❌ TELEGRAM_TOKEN missing. Cannot start bot.")
-        return
 
     logger.info("🚀 Starting Flow X Bot...")
     updater = Updater(token=TELEGRAM_TOKEN, use_context=True)
@@ -432,8 +434,8 @@ def main():
     # Register slash commands for Telegram interface
     updater.bot.set_my_commands([
         ("start", "Launch bot"),
-        ("buy", "Simulate Buy"),
-        ("sell", "Simulate Sell"),
+        ("buy", "Execute Buy Trade"),
+        ("sell", "Execute Sell Trade"),
         ("balance", "Wallet Balance"),
         ("pnl", "PnL Summary"),
         ("ping", "Jupiter Check"),
@@ -468,8 +470,8 @@ def main():
     # ✅ Register slash commands for Telegram interface
     updater.bot.set_my_commands([
         ("start", "Launch bot"),
-        ("buy", "Simulate Buy"),
-        ("sell", "Simulate Sell"),
+        ("buy", "Execute Buy Trade"),
+        ("sell", "Execute Sell Trade"),
         ("balance", "Wallet Balance"),
         ("pnl", "PnL Summary"),
         ("ping", "Jupiter Check"),
@@ -524,13 +526,10 @@ def main():
 
 
 # === Timezone Setup + Imports ===
-import os
 import pytz
 import datetime
-from telegram.ext import Updater, CallbackContext, MessageHandler, Filters
 from telegram import Update, ParseMode
 from utils.reporting import send_daily_pnl_chart
-import logging
 
 # Load bot token
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
