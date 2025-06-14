@@ -1,8 +1,5 @@
 import time
 from datetime import datetime
-from telegram import Update
-from telegram.ext import CallbackContext
-
 from utils.db import save_trade
 from utils.signer import load_wallet_from_env
 from utils.format import format_trade_result
@@ -13,7 +10,7 @@ from config import TRADE_AMOUNT, SLIPPAGE_TOLERANCE
 USDC_MINT = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
 SOL_MINT = "So11111111111111111111111111111111111111112"
 
-def execute_jupiter_trade(wallet, side, amount_usdc=TRADE_AMOUNT, live=False, slippage=SLIPPAGE_TOLERANCE):
+def execute_jupiter_trade(side, amount_usdc=TRADE_AMOUNT, live=False, slippage=SLIPPAGE_TOLERANCE):
     trade_result = {}
 
     if not live:
@@ -76,14 +73,3 @@ def execute_jupiter_trade(wallet, side, amount_usdc=TRADE_AMOUNT, live=False, sl
     })
 
     return trade_result
-
-# === Optional legacy handlers (safe to remove) ===
-def live_buy(update: Update, context: CallbackContext):
-    update.message.reply_text("⏳ Executing LIVE BUY (USDC → SOL)...")
-    result = execute_jupiter_trade("BUY", live=True)
-    update.message.reply_text(format_trade_result(result), parse_mode="HTML")
-
-def live_sell(update: Update, context: CallbackContext):
-    update.message.reply_text("⏳ Executing LIVE SELL (SOL → USDC)...")
-    result = execute_jupiter_trade("SELL", live=True)
-    update.message.reply_text(format_trade_result(result), parse_mode="HTML")
