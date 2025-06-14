@@ -23,7 +23,7 @@ STOP_LOSS_PERCENT = CONFIG["stop_loss_percent"]
 COOLDOWN_MINUTES = CONFIG["cooldown_minutes"]
 TRADING_MODE = CONFIG["trading_mode"]
 AUTO_TRADE_ENABLED = CONFIG["auto_trade_enabled"]
-SLIPPAGE_TOLERANCE = CONFIG.get("slippage_tolerance", 0.5)
+SLIPPAGE_TOLERANCE = CONFIG["slippage_tolerance"]
 
 # === Bot Live Mode Flag ===
 LIVE_MODE = TRADING_MODE.upper() == "LIVE"
