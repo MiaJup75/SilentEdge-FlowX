@@ -49,7 +49,7 @@ logger = logging.getLogger(__name__)
 
 # === Environment Setup ===
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
-TRADE_AMOUNT_USDC = float(os.getenv("TRADE_AMOUNT_USDC", "5"))
+TRADE_AMOUNT = float(os.getenv("TRADE_AMOUNT", "5"))
 LIVE_MODE = os.getenv("LIVE_MODE", "false").lower() == "true"
 OWNER_ID = int(os.getenv("OWNER_ID", "0"))
 
@@ -80,7 +80,7 @@ def start(update: Update, context: CallbackContext):
         "🚀 <b>Welcome to Flow X Bot</b>\n\n"
         f"<b>Wallet:</b> <code>{wallet_address}</code>\n"
         f"<b>Mode:</b> {'✅ <b>LIVE</b>' if LIVE_MODE else '🧪 <b>SIMULATED</b>'}\n"
-        f"<b>Trade Size:</b> ${TRADE_AMOUNT_USDC:.2f}\n\n"
+        f"<b>Trade Size:</b> ${TRADE_AMOUNT:.2f}\n\n"
         "Tap a button or type a command to begin. ⬇️"
     )
 
@@ -107,7 +107,7 @@ def button(update: Update, context: CallbackContext):
     try:
         if action in ["buy", "sell"]:
             query.edit_message_text("⏳ Executing trade...")
-            result = execute_jupiter_trade(wallet, action.upper(), TRADE_AMOUNT_USDC, LIVE_MODE)
+            result = execute_jupiter_trade(wallet, action.upper(), TRADE_AMOUNT, LIVE_MODE)
             query.edit_message_text(
                 text=format_trade_result(result),
                 parse_mode=ParseMode.HTML
@@ -156,7 +156,7 @@ def button(update: Update, context: CallbackContext):
         elif action == "menu":
             query.edit_message_text(
                 text="📅 Main Menu:",
-                reply_markup=get_main_menu(is_live=LIVE_MODE, trade_limit=TRADE_AMOUNT_USDC),
+                reply_markup=get_main_menu(is_live=LIVE_MODE, trade_limit=TRADE_AMOUNT),
                 parse_mode=ParseMode.HTML
             )
 
@@ -178,6 +178,10 @@ def button(update: Update, context: CallbackContext):
             text=format_error_message("❌ Something went wrong. Try again."),
             parse_mode=ParseMode.HTML
         )
+
+from config import TRADE_AMOUNT
+from wallet import get_wallet_address
+
 def buy(update: Update, context: CallbackContext):
     try:
         # === Trade Guard ===
@@ -189,7 +193,7 @@ def buy(update: Update, context: CallbackContext):
             return
 
         update.message.reply_text("⏳ Executing buy trade...")
-        result = execute_jupiter_trade(wallet, "BUY", TRADE_AMOUNT_USDC, LIVE_MODE)
+        result = execute_jupiter_trade(get_wallet_address(), "BUY", TRADE_AMOUNT, live=True)
         update.message.reply_text(
             format_trade_result(result),
             parse_mode=ParseMode.HTML
@@ -200,6 +204,7 @@ def buy(update: Update, context: CallbackContext):
             format_error_message("❌ Buy failed."),
             parse_mode=ParseMode.HTML
         )
+
 
 def sell(update: Update, context: CallbackContext):
     try:
@@ -212,7 +217,7 @@ def sell(update: Update, context: CallbackContext):
             return
 
         update.message.reply_text("⏳ Executing sell trade...")
-        result = execute_jupiter_trade(wallet, "SELL", TRADE_AMOUNT_USDC, LIVE_MODE)
+        result = execute_jupiter_trade(get_wallet_address(), "SELL", TRADE_AMOUNT, live=True)
         update.message.reply_text(
             format_trade_result(result),
             parse_mode=ParseMode.HTML
@@ -275,7 +280,7 @@ def help_cmd(update: Update, context: CallbackContext):
 def debug(update: Update, context: CallbackContext):
     try:
         update.message.reply_text("⏳ Gathering debug info...")
-        debug_text = format_debug_info(get_wallet_address(wallet), LIVE_MODE, TRADE_AMOUNT_USDC)
+        debug_text = format_debug_info(get_wallet_address(wallet), LIVE_MODE, TRADE_AMOUNT)
         update.message.reply_text(
             debug_text,
             parse_mode=ParseMode.HTML
@@ -301,7 +306,7 @@ def menu(update: Update, context: CallbackContext):
             "📋 Main Menu:",
             reply_markup=get_main_menu(
                 is_live=LIVE_MODE,
-                trade_limit=TRADE_AMOUNT_USDC,
+                trade_limit=TRADE_AMOUNT,
                 trades_today=trades_today
             ),
             parse_mode=ParseMode.HTML
@@ -487,8 +492,6 @@ def main():
     dispatcher.add_handler(CommandHandler("aiprompt", aiprompt))
     dispatcher.add_handler(CommandHandler("pause", pause))
     dispatcher.add_handler(CommandHandler("limit", limit))
-    dispatcher.add_handler(CommandHandler("livebuy", live_buy))
-    dispatcher.add_handler(CommandHandler("livesell", live_sell))
 
     dispatcher.add_handler(CallbackQueryHandler(handle_pnl_button, pattern="^pnl:"))
     dispatcher.add_handler(CallbackQueryHandler(button))
@@ -541,32 +544,6 @@ def fallback_message(update: Update, context: CallbackContext):
         "🤖 I didn’t understand that. Use /menu to get started.",
         parse_mode=ParseMode.HTML
     )
-
-def live_buy(update: Update, context: CallbackContext):
-    if is_paused():
-        update.message.reply_text("⛔ Trading is currently paused.")
-        return
-    if not check_and_increment_trade_count():
-        update.message.reply_text("⚠️ Daily trade limit reached.")
-        return
-
-    update.message.reply_text("💸 Executing live BUY...")
-    wallet = get_wallet_address()
-    result = execute_jupiter_trade("BUY", TRADE_AMOUNT_USDC, live=True)
-    update.message.reply_text(format_trade_result(result), parse_mode=ParseMode.HTML)
-
-def live_sell(update: Update, context: CallbackContext):
-    if is_paused():
-        update.message.reply_text("⛔ Trading is currently paused.")
-        return
-    if not check_and_increment_trade_count():
-        update.message.reply_text("⚠️ Daily trade limit reached.")
-        return
-
-    update.message.reply_text("💸 Executing live SELL...")
-    wallet = get_wallet_address()
-    result = execute_jupiter_trade("SELL", TRADE_AMOUNT_USDC, live=True)
-    update.message.reply_text(format_trade_result(result), parse_mode=ParseMode.HTML)
 
 # === Run Bot ===
 if __name__ == '__main__':
