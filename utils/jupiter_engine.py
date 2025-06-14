@@ -29,12 +29,17 @@ def get_swap_quote(from_token, to_token, amount_usdc, slippage=0.5):
             "slippageBps": int(slippage * 100),
             "onlyDirectRoutes": False
         }
-        url = f"{JUPITER_QUOTE_URL}?inputMint={from_token}&outputMint={to_token}&amount={amount_lamports}&slippageBps={int(slippage * 100)}"
-        print(f"🛰 Jupiter API Request: {url}")
-        res = requests.get(JUPITER_QUOTE_URL, params=params, timeout=10)
+        headers = {
+            "Origin": "https://jup.ag",
+            "User-Agent": "Mozilla/5.0"
+        }
+
+        print(f"🛰 Jupiter API Request: {JUPITER_QUOTE_URL} with {params}")
+        res = requests.get(JUPITER_QUOTE_URL, params=params, headers=headers, timeout=10)
         res.raise_for_status()
         data = res.json()
-        print("📦 Jupiter API Response:")
+
+        print("📦 Jupiter Quote Response:")
         print(json.dumps(data, indent=2))
         return data
     except Exception as e:
@@ -60,8 +65,10 @@ def execute_swap(wallet_address, private_key, from_token, to_token, amount_usdc,
             "userPublicKey": wallet_address,
             "wrapUnwrapSOL": True,
             "useSharedAccounts": True,
-            "computeUnitPriceMicroLamports": 10000
+            "computeUnitPriceMicroLamports": 10000,
+            "useSimulator": False
         }
+
         print("📤 Sending swap request to Jupiter")
         res = requests.post(JUPITER_SWAP_URL, json=swap_req, timeout=10)
         res.raise_for_status()
