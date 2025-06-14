@@ -1,6 +1,6 @@
 {
-  "base_token": "So11111111111111111111111111111111111111112",
-  "quote_token": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+  "base_token": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+  "quote_token": "So11111111111111111111111111111111111111112",
   "trade_amount": 5,
   "take_profit_percent": 1,
   "stop_loss_percent": 0.5,
