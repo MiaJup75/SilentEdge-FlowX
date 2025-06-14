@@ -1,6 +1,6 @@
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 
-def get_main_menu(is_live=False, trade_limit=5, trades_today=0):
+def get_main_menu(is_live=True, trade_limit=5, trades_today=0):
     # Status Labels
     mode_label = "✅ LIVE MODE" if is_live else "🧪 SIM MODE"
     limit_label = f"${trade_limit:.2f} Limit"
