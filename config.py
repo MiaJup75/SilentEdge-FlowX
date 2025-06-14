@@ -3,27 +3,29 @@ import json
 
 # === Environment Variables ===
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
-TELEGRAM_USER_ID = int(os.getenv("TELEGRAM_USER_ID", "0"))
+OWNER_ID = int(os.getenv("OWNER_ID", "0"))
 PHANTOM_SECRET_KEY = os.getenv("PHANTOM_SECRET_KEY")
 JUPITER_API_URL = "https://quote-api.jup.ag/v6"
 PORT = int(os.environ.get("PORT", "10000"))
 WEBHOOK_URL = os.environ.get("WEBHOOK_URL")
-OWNER_ID = int(os.getenv("OWNER_ID", "0"))
 
 # === Load config.json Parameters ===
-with open("config.json", "r") as f:
-    CONFIG = json.load(f)
+try:
+    with open("config.json", "r") as f:
+        CONFIG = json.load(f)
+except Exception as e:
+    raise RuntimeError(f"❌ Failed to load config.json: {e}")
 
 # === Trading Strategy Settings ===
-BASE_TOKEN = CONFIG["base_token"]
-QUOTE_TOKEN = CONFIG["quote_token"]
-TRADE_AMOUNT = CONFIG["trade_amount"]
-TAKE_PROFIT_PERCENT = CONFIG["take_profit_percent"]
-STOP_LOSS_PERCENT = CONFIG["stop_loss_percent"]
-COOLDOWN_MINUTES = CONFIG["cooldown_minutes"]
-TRADING_MODE = CONFIG["trading_mode"]
-AUTO_TRADE_ENABLED = CONFIG["auto_trade_enabled"]
-SLIPPAGE_TOLERANCE = CONFIG["slippage_tolerance"]
+BASE_TOKEN = CONFIG.get("base_token", "")
+QUOTE_TOKEN = CONFIG.get("quote_token", "")
+TRADE_AMOUNT = CONFIG.get("trade_amount", 5)
+TAKE_PROFIT_PERCENT = CONFIG.get("take_profit_percent", 1.0)
+STOP_LOSS_PERCENT = CONFIG.get("stop_loss_percent", 0.5)
+COOLDOWN_MINUTES = CONFIG.get("cooldown_minutes", 5)
+TRADING_MODE = CONFIG.get("trading_mode", "SIM")
+AUTO_TRADE_ENABLED = CONFIG.get("auto_trade_enabled", False)
+SLIPPAGE_TOLERANCE = CONFIG.get("slippage_tolerance", 0.5)
 
 # === Bot Live Mode Flag ===
 LIVE_MODE = TRADING_MODE.upper() == "LIVE"
