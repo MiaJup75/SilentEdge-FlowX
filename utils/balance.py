@@ -7,7 +7,7 @@ from spl.token.instructions import get_associated_token_address
 # === Token Definitions ===
 TOKEN_MINTS = {
     "SOL": "So11111111111111111111111111111111111111112",
-    "USDC": "Es9vMFrzaCERsbyzNKzD4DM6YkT6rzdEDHHZLCXh4MfP",
+    "USDC": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",  # ✅ Native USDC
     "wBTC": "9n4nbM75f5Ui33ZbPYXn59EwSgE8CGsHtAeTH5YFeJ9E",
     "wETH": "7vfCXTz6Xn9PafWz6ZrYT4hwTnTqQZKrj6kzzF7QjZqx",
     "wXRP": "6p9hY3F7v2KQhRJgkzGwXeMTufKYdcG89h6K9bGVznhu"
@@ -21,11 +21,9 @@ TOKEN_EMOJIS = {
     "wXRP": "💧"
 }
 
-# === Setup ===
 SOLANA_RPC_URL = os.getenv("SOLANA_RPC_URL", "https://api.mainnet-beta.solana.com")
 client = Client(SOLANA_RPC_URL)
 
-# === Price Fetching ===
 def fetch_price(mint: str) -> float:
     try:
         url = f"https://api.dexscreener.com/latest/dex/tokens/{mint}"
@@ -37,7 +35,6 @@ def fetch_price(mint: str) -> float:
         print(f"❌ Error fetching price for {mint}: {e}")
         return 0.0
 
-# === Balance Fetching ===
 def get_wallet_balance(wallet_address: str) -> tuple:
     balances = {}
     pubkey = PublicKey(wallet_address)
@@ -60,7 +57,6 @@ def get_wallet_balance(wallet_address: str) -> tuple:
             print(f"⚠️ Error fetching {symbol}: {e}")
             balances[symbol] = {"amount": 0.0, "usd": 0.0}
 
-    # === Formatting Summary ===
     total_usd = sum(token["usd"] for token in balances.values())
     display_lines = [f"💰 <b>Total Wallet Value:</b> ${round(total_usd, 2):,.2f}\n"]
 
