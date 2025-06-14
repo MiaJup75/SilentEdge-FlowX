@@ -9,8 +9,7 @@ from telegram.ext import CallbackContext
 from utils.db import save_trade
 from utils.signer import load_wallet_from_env
 from utils.format import format_trade_result
-from jupiter_engine import execute_swap
-
+from utils.jupiter_engine import execute_swap
 
 def execute_jupiter_trade(side, amount_usdc=50.0, live=False):
     trade_result = {}
