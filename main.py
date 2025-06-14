@@ -416,6 +416,12 @@ def limit(update: Update, context: CallbackContext):
     PORT = int(os.environ.get("PORT", "10000"))
     WEBHOOK_URL = os.environ.get("WEBHOOK_URL")
 
+from keep_alive import run as keep_alive_server
+import threading
+
+# Start keep-alive Flask server in background
+threading.Thread(target=keep_alive_server).start()
+    
     updater.start_webhook(
         listen="0.0.0.0",
         port=PORT,
