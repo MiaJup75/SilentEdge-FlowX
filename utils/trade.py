@@ -1,7 +1,7 @@
 import time
 from datetime import datetime
 
-from utils.ata_checker import check_ata_exists
+from utils.ata_checker import check_ata_exists  # ✅ Corrected import and usage
 from utils.db import save_trade
 from utils.signer import load_wallet_from_env
 from utils.format import format_trade_result
@@ -39,8 +39,8 @@ def execute_jupiter_trade(side, amount_usdc=TRADE_AMOUNT, live=False, slippage=S
             print("→ Amount:", amount_usdc)
             print("→ Slippage:", slippage)
 
-            # ✅ ATA Check (corrected call)
-            has_ata = has_token_account(wallet_address, from_token)
+            # ✅ ATA Check
+            has_ata = check_ata_exists(wallet_address, from_token)
             if not has_ata:
                 alert_msg = (
                     "⚠️ <b>Token account missing!</b>\n"
