@@ -77,7 +77,7 @@ def execute_jupiter_trade(side, amount_usdc=TRADE_AMOUNT, live=False, slippage=S
 
     return trade_result
 
-# Optional legacy handlers (safe to remove if unused)
+# === Optional legacy handlers (safe to remove) ===
 def live_buy(update: Update, context: CallbackContext):
     update.message.reply_text("⏳ Executing LIVE BUY (USDC → SOL)...")
     result = execute_jupiter_trade("BUY", live=True)
