@@ -1,14 +1,11 @@
-# utils/jupiter_engine.py
-
 import requests
 import json
 import time
 import sys
-import base64
+from base64 import b64decode
 from solders.keypair import Keypair
-from solders.pubkey import Pubkey
-from solana.transaction import Transaction
 from solana.rpc.api import Client
+from solana.transaction import Transaction
 from utils.signer import load_wallet_from_env
 
 # === Jupiter API Endpoints ===
@@ -23,9 +20,8 @@ USDC_MINT = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
 SOLANA_RPC = "https://api.mainnet-beta.solana.com"
 client = Client(SOLANA_RPC)
 
-# === Flush stdout for Render logs ===
+# === Ensure stdout is flushed for Render ===
 sys.stdout.reconfigure(line_buffering=True)
-
 
 def get_swap_quote(from_token, to_token, amount_usdc, slippage=0.5):
     try:
@@ -42,8 +38,6 @@ def get_swap_quote(from_token, to_token, amount_usdc, slippage=0.5):
             "Origin": "https://jup.ag",
             "User-Agent": "Mozilla/5.0"
         }
-
-        print(f"🛰 Jupiter API Request: {JUPITER_QUOTE_URL} with {params}")
         res = requests.get(JUPITER_QUOTE_URL, params=params, headers=headers, timeout=10)
         res.raise_for_status()
         return res.json()
@@ -51,18 +45,17 @@ def get_swap_quote(from_token, to_token, amount_usdc, slippage=0.5):
         print(f"[❌ Jupiter Quote Error] {e}")
         return {}
 
-
 def execute_swap(wallet_address, private_key, from_token, to_token, amount_usdc, slippage=0.5):
     try:
-        print(f"🔁 Executing Swap | {amount_usdc} {from_token} → {to_token}")
+        print(f"🔁 Initiating swap: ${amount_usdc} {from_token} → {to_token}")
         quote = get_swap_quote(from_token, to_token, amount_usdc, slippage)
 
-        if not quote or "routes" not in quote or not quote["routes"]:
-            return {"success": False, "error": "No valid Jupiter routes"}
+        if not quote.get("routes"):
+            return {"success": False, "error": "No valid routes returned by Jupiter"}
 
-        route = quote["routes"][0]
+        best_route = quote["routes"][0]
         swap_req = {
-            "route": route,
+            "route": best_route,
             "userPublicKey": wallet_address,
             "wrapUnwrapSOL": True,
             "useSharedAccounts": False,
@@ -71,35 +64,26 @@ def execute_swap(wallet_address, private_key, from_token, to_token, amount_usdc,
             "useSimulator": False
         }
 
-        print("📤 Requesting Jupiter Swap TX...")
         res = requests.post(JUPITER_SWAP_URL, json=swap_req, timeout=10)
         res.raise_for_status()
-        swap_tx = res.json()
+        swap_data = res.json()
 
-        if "swapTransaction" not in swap_tx:
-            return {"success": False, "error": "Missing swap transaction from Jupiter"}
+        if "swapTransaction" not in swap_data:
+            return {"success": False, "error": "Jupiter response missing transaction"}
 
-        encoded_tx = swap_tx["swapTransaction"]
-        tx_data = base64.b64decode(encoded_tx)
-        tx = Transaction.deserialize(tx_data)
-
-        # === Add blockhash + fee payer ===
-        print("🔑 Signing transaction...")
+        raw_tx = b64decode(swap_data["swapTransaction"])
+        tx = Transaction.deserialize(raw_tx)
         kp = Keypair.from_bytes(private_key)
-        blockhash = client.get_latest_blockhash()["result"]["value"]["blockhash"]
-        tx.recent_blockhash = blockhash
-        tx.fee_payer = kp.pubkey()
-
         tx.sign([kp])
-        tx_sig = client.send_raw_transaction(tx.serialize(), opts={"skip_preflight": True})
+        sig = client.send_raw_transaction(tx.serialize(), opts={"skip_preflight": True})
 
         return {
             "success": True,
             "side": f"{from_token}->{to_token}",
             "amount": amount_usdc,
-            "price_estimate": round(float(route.get("outAmount", 0)) / 10**6, 6),
-            "used_route": route["marketInfos"][0].get("label", "N/A"),
-            "tx_hash": tx_sig["result"]
+            "price_estimate": round(float(best_route.get("outAmount", 0)) / 10**6, 6),
+            "used_route": best_route["marketInfos"][0].get("label", "N/A"),
+            "tx_hash": sig["result"]
         }
 
     except Exception as e:
