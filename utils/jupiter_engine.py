@@ -31,7 +31,8 @@ def get_swap_quote(from_token, to_token, amount_usdc, slippage=0.5):
             "outputMint": to_token,
             "amount": amount_lamports,
             "slippageBps": int(slippage * 100),
-            "onlyDirectRoutes": False
+            "onlyDirectRoutes": False,
+            "swapMode": "ExactIn"  # ✅ Ensures Jupiter returns a usable route
         }
         headers = {
             "Origin": "https://jup.ag",
