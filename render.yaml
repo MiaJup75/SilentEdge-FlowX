@@ -10,35 +10,31 @@ services:
       # === Core Flow X Vars ===
       - key: TELEGRAM_TOKEN
         fromEnv: TELEGRAM_TOKEN
+      - key: OWNER_ID
+        fromEnv: OWNER_ID
+      - key: TELEGRAM_USER_ID
+        fromEnv: TELEGRAM_USER_ID
       - key: TRADE_AMOUNT_USDC
         fromEnv: TRADE_AMOUNT_USDC
       - key: LIVE_MODE
         fromEnv: LIVE_MODE
-      - key: OPENAI_API_KEY
-        fromEnv: OPENAI_API_KEY
-      - key: OWNER_ID
-        fromEnv: OWNER_ID
+
+      # === Optional Enhancements ===
       - key: PIN_WELCOME_ENABLED
         fromEnv: PIN_WELCOME_ENABLED
-      - key: TELEGRAM_USER_ID
-        fromEnv: TELEGRAM_USER_ID
-      - key: SOLFLARE_PRIVATE_KEY
-        fromEnv: SOLFLARE_PRIVATE_KEY
       - key: ALLOWED_USERS
         fromEnv: ALLOWED_USERS
-
-      # === Optional Sniper/FX Settings (safe to include) ===
       - key: BASE_ASSET
         fromEnv: BASE_ASSET
-      - key: STOP_LOSS_PERCENT
-        fromEnv: STOP_LOSS_PERCENT
       - key: TAKE_PROFIT_PERCENT
         fromEnv: TAKE_PROFIT_PERCENT
+      - key: STOP_LOSS_PERCENT
+        fromEnv: STOP_LOSS_PERCENT
+      - key: COOLDOWN_MINUTES
+        fromEnv: COOLDOWN_MINUTES
+      - key: DAILY_REPORT_TIME
+        fromEnv: DAILY_REPORT_TIME
       - key: SNIPER_MODE
         fromEnv: SNIPER_MODE
       - key: DEBUG_MODE
         fromEnv: DEBUG_MODE
-      - key: DAILY_REPORT_TIME
-        fromEnv: DAILY_REPORT_TIME
-      - key: COOLDOWN_MINUTES
-        fromEnv: COOLDOWN_MINUTES
