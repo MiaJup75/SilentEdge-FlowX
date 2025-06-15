@@ -37,8 +37,7 @@ from state_manager import (
     set_limit
 )
 
-# === Send TP/SL Test Alert ===
-send_alert("🚀 TP/SL watcher alert test successful.")
+logger.info("✅ TP/SL watcher thread started.")
 
 # === /reboot Command ===
 def reboot(update, context):
