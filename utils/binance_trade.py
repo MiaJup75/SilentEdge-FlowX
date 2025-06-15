@@ -1,7 +1,7 @@
 import time
 from datetime import datetime
 from utils.db import save_trade
-from config import TRADE_AMOUNT, SLIPPAGE_TOLERANCE, BASE_TOKEN, QUOTE_TOKEN, LIVE_MODE
+from config import TRADE_AMOUNT, SLIPPAGE_TOLERANCE, BASE_TOKEN, QUOTE_TOKEN, LIVE_MODE, TAKE_PROFIT_PERCENT, STOP_LOSS_PERCENT
 import requests
 import hmac
 import hashlib
@@ -47,6 +47,7 @@ def execute_binance_trade(side: str, amount_usdc=TRADE_AMOUNT, live=LIVE_MODE, s
             max_price = execution_price * (1 + slippage / 100)
 
             if not live:
+                # Simulated entry
                 trade_result = {
                     "side": side,
                     "amount": amount_usdc,
@@ -73,13 +74,20 @@ def execute_binance_trade(side: str, amount_usdc=TRADE_AMOUNT, live=LIVE_MODE, s
                 res = response.json()
 
                 if "orderId" in res:
-                    price_executed = res["fills"][0]["price"] if res.get("fills") else str(execution_price)
+                    price_executed = float(res["fills"][0]["price"]) if res.get("fills") else execution_price
+
+                    # Calculate TP/SL thresholds
+                    tp_price = price_executed * (1 + TAKE_PROFIT_PERCENT / 100)
+                    sl_price = price_executed * (1 - STOP_LOSS_PERCENT / 100)
+
                     trade_result = {
                         "side": side,
                         "amount": amount_usdc,
                         "status": "✅ Live Trade Executed",
-                        "price": f"${price_executed}",
-                        "tx_hash": str(res["orderId"])
+                        "price": f"${price_executed:.4f}",
+                        "tx_hash": str(res["orderId"]),
+                        "tp_price": round(tp_price, 4),
+                        "sl_price": round(sl_price, 4)
                     }
                     break
                 else:
@@ -101,11 +109,13 @@ def execute_binance_trade(side: str, amount_usdc=TRADE_AMOUNT, live=LIVE_MODE, s
 
     save_trade({
         "timestamp": datetime.utcnow().isoformat(),
-        "side": trade_result["side"],
-        "amount": trade_result["amount"],
-        "status": trade_result["status"],
-        "price": trade_result["price"],
-        "tx_hash": trade_result["tx_hash"]
+        "side": trade_result.get("side"),
+        "amount": trade_result.get("amount"),
+        "status": trade_result.get("status"),
+        "price": trade_result.get("price"),
+        "tx_hash": trade_result.get("tx_hash"),
+        "tp_price": trade_result.get("tp_price", None),
+        "sl_price": trade_result.get("sl_price", None)
     })
 
     return trade_result
