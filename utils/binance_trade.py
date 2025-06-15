@@ -25,6 +25,10 @@ def get_binance_price(symbol: str):
         url = f"{BASE_URL}{PRICE_ENDPOINT}?symbol={symbol}"
         print(f"[DEBUG] Fetching Binance price for: {symbol}")
         response = requests.get(url, timeout=5)
+
+        # Log status code and raw response for full visibility
+        print(f"[DEBUG] Status: {response.status_code}, Response: {response.text}")
+
         response.raise_for_status()
         data = response.json()
         price = float(data["price"])
@@ -51,7 +55,6 @@ def execute_binance_trade(side: str, amount_usdc=TRADE_AMOUNT, live=LIVE_MODE, s
             if not execution_price:
                 raise Exception("Price fetch failed")
 
-            # Simulated Trade
             if not live:
                 trade_result = {
                     "side": side,
@@ -62,7 +65,6 @@ def execute_binance_trade(side: str, amount_usdc=TRADE_AMOUNT, live=LIVE_MODE, s
                 }
                 break
 
-            # Live Trade
             timestamp = int(time.time() * 1000)
             params = {
                 "symbol": symbol,
@@ -77,6 +79,8 @@ def execute_binance_trade(side: str, amount_usdc=TRADE_AMOUNT, live=LIVE_MODE, s
             url = f"{BASE_URL}{ORDER_ENDPOINT}?{payload}"
             response = requests.post(url, headers=headers)
             res = response.json()
+
+            print("[DEBUG] Trade response:", res)
 
             if "orderId" in res:
                 price_executed = float(res["fills"][0]["price"]) if res.get("fills") else execution_price
@@ -110,7 +114,6 @@ def execute_binance_trade(side: str, amount_usdc=TRADE_AMOUNT, live=LIVE_MODE, s
             else:
                 time.sleep(1.5)
 
-    # Log trade
     save_trade({
         "timestamp": datetime.utcnow().isoformat(),
         "side": trade_result.get("side"),
