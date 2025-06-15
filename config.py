@@ -3,9 +3,9 @@ import json
 
 # === Environment Variables ===
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
-OWNER_ID = int(os.getenv("OWNER_ID", "0"))
-PHANTOM_SECRET_KEY = os.getenv("PHANTOM_SECRET_KEY")
-JUPITER_API_URL = "https://quote-api.jup.ag/v6"
+OWNER_ID = int(os.getenv("TELEGRAM_USER_ID", "0"))
+BINANCE_API_KEY = os.getenv("BINANCE_API_KEY")
+BINANCE_SECRET_KEY = os.getenv("BINANCE_SECRET_KEY")
 PORT = int(os.environ.get("PORT", "10000"))
 WEBHOOK_URL = os.environ.get("WEBHOOK_URL")
 
