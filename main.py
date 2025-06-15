@@ -41,7 +41,11 @@ from state_manager import (
     set_limit
 )
 
-from utils.wallet_ops import withdraw_all_handler, confirm_all_handler
+from handlers.ping import run_health_check
+
+def ping(update, context):
+    report = run_health_check()
+    update.message.reply_text(report, parse_mode="HTML")
 
 
 # === Logger ===
