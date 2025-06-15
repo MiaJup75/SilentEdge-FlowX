@@ -43,6 +43,23 @@ from state_manager import (
 
 from handlers.ping import run_health_check
 
+from utils.telegram_alerts import send_alert
+
+send_alert("🚀 TP/SL watcher alert test successful.")
+
+from telegram.ext import CommandHandler
+import os
+
+def reboot(update, context):
+    user_id = str(update.effective_user.id)
+    if user_id == os.getenv("TELEGRAM_USER_ID"):
+        update.message.reply_text("♻️ Rebooting bot... (manual action may be required on Render)")
+        # This just simulates reboot notice. Real reboot = use Render UI or webhook ping
+    else:
+        update.message.reply_text("🚫 You are not authorized to reboot the bot.")
+
+dispatcher.add_handler(CommandHandler("reboot", reboot))
+
 def ping(update, context):
     report = run_health_check()
     update.message.reply_text(report, parse_mode="HTML")
@@ -494,6 +511,12 @@ def main():
     import threading
     threading.Thread(target=keep_alive_server).start()
 
+import threading
+from utils.tp_sl_watcher import monitor_trades
+
+# 🔁 Start TP/SL monitor in background
+threading.Thread(target=monitor_trades, daemon=True).start()
+    
     updater.start_webhook(
         listen="0.0.0.0",
         port=PORT,
@@ -529,9 +552,17 @@ def main():
     dispatcher.add_handler(CommandHandler("pause", pause))
     dispatcher.add_handler(CommandHandler("limit", limit))
 
+    # === Dynamically register symbol-specific PnL commands ===
+    from utils.pnl import calculate_daily_pnl
 
-    dispatcher.add_handler(withdraw_all_handler)
-    dispatcher.add_handler(confirm_all_handler)
+    def generate_pnl_handler(symbol):
+        def handler(update, context):
+            result = calculate_daily_pnl("7d", symbol=symbol.upper())
+            update.message.reply_text(result)
+        return handler
+
+    for coin in ["BTC", "ETH", "SOL", "XRP"]:
+        dispatcher.add_handler(CommandHandler(f"pnl{coin.lower()}", generate_pnl_handler(coin)))
 
     dispatcher.add_handler(CallbackQueryHandler(handle_pnl_button, pattern="^pnl:"))
     dispatcher.add_handler(CallbackQueryHandler(button))
