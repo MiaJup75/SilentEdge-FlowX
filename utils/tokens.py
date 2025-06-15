@@ -37,6 +37,11 @@ def transfer_spl_token(mint: str, recipient: str, amount: float, decimals: int =
         )
     )
 
-    # ✅ FIXED: Wrap signer in list
-    res = client.send_transaction(txn, [sender_keypair])
+    # ✅ FIXED: Use list of signers and pass transaction options
+    res = client.send_transaction(
+        txn,
+        [sender_keypair],
+        opts={"skip_preflight": True, "preflight_commitment": "confirmed"}
+    )
+
     return res["result"]
