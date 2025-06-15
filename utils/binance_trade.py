@@ -1,12 +1,14 @@
 import time
 from datetime import datetime
 from utils.db import save_trade
-from config import TRADE_AMOUNT, SLIPPAGE_TOLERANCE, BASE_TOKEN, QUOTE_TOKEN, LIVE_MODE, TAKE_PROFIT_PERCENT, STOP_LOSS_PERCENT
+from config import (
+    TRADE_AMOUNT, SLIPPAGE_TOLERANCE, BASE_TOKEN, QUOTE_TOKEN,
+    LIVE_MODE, TAKE_PROFIT_PERCENT, STOP_LOSS_PERCENT
+)
 import requests
 import hmac
 import hashlib
 import os
-import json
 
 # === Load Binance API Credentials ===
 BINANCE_API_KEY = os.getenv("BINANCE_API_KEY")
@@ -22,11 +24,14 @@ def get_binance_price(symbol: str):
     try:
         url = f"{BASE_URL}{PRICE_ENDPOINT}?symbol={symbol}"
         print(f"[DEBUG] Fetching Binance price for: {symbol}")
-        response = requests.get(url)
+        response = requests.get(url, timeout=5)
+        response.raise_for_status()
         data = response.json()
-        return float(data.get("price", 0))
+        price = float(data["price"])
+        print(f"[DEBUG] Price received: {price}")
+        return price
     except Exception as e:
-        print("[Price Fetch Error]", e)
+        print(f"[ERROR] Failed to fetch price for {symbol}: {e}")
         return 0.0
 
 
@@ -38,17 +43,15 @@ def sign_payload(params):
 
 def execute_binance_trade(side: str, amount_usdc=TRADE_AMOUNT, live=LIVE_MODE, slippage=SLIPPAGE_TOLERANCE, retries=3):
     trade_result = {}
-    symbol = f"{BASE_TOKEN}{QUOTE_TOKEN}".upper()  # ✅ FIXED: Ensure symbol is uppercase
+    symbol = f"{BASE_TOKEN}{QUOTE_TOKEN}".upper()
 
-    for attempt in range(retries):
+    for attempt in range(1, retries + 1):
         try:
             execution_price = get_binance_price(symbol)
             if not execution_price:
                 raise Exception("Price fetch failed")
 
-            min_price = execution_price * (1 - slippage / 100)
-            max_price = execution_price * (1 + slippage / 100)
-
+            # Simulated Trade
             if not live:
                 trade_result = {
                     "side": side,
@@ -59,44 +62,44 @@ def execute_binance_trade(side: str, amount_usdc=TRADE_AMOUNT, live=LIVE_MODE, s
                 }
                 break
 
-            else:
-                timestamp = int(time.time() * 1000)
-                params = {
-                    "symbol": symbol,
-                    "side": side.upper(),
-                    "type": "MARKET",
-                    "quoteOrderQty": amount_usdc,
-                    "timestamp": timestamp
+            # Live Trade
+            timestamp = int(time.time() * 1000)
+            params = {
+                "symbol": symbol,
+                "side": side.upper(),
+                "type": "MARKET",
+                "quoteOrderQty": amount_usdc,
+                "timestamp": timestamp
+            }
+
+            headers = {"X-MBX-APIKEY": BINANCE_API_KEY}
+            payload = sign_payload(params)
+            url = f"{BASE_URL}{ORDER_ENDPOINT}?{payload}"
+            response = requests.post(url, headers=headers)
+            res = response.json()
+
+            if "orderId" in res:
+                price_executed = float(res["fills"][0]["price"]) if res.get("fills") else execution_price
+
+                tp_price = price_executed * (1 + TAKE_PROFIT_PERCENT / 100)
+                sl_price = price_executed * (1 - STOP_LOSS_PERCENT / 100)
+
+                trade_result = {
+                    "side": side,
+                    "amount": amount_usdc,
+                    "status": "✅ Live Trade Executed",
+                    "price": f"${price_executed:.4f}",
+                    "tx_hash": str(res["orderId"]),
+                    "tp_price": round(tp_price, 4),
+                    "sl_price": round(sl_price, 4)
                 }
-
-                headers = {"X-MBX-APIKEY": BINANCE_API_KEY}
-                payload = sign_payload(params)
-                url = f"{BASE_URL}{ORDER_ENDPOINT}?{payload}"
-                response = requests.post(url, headers=headers)
-                res = response.json()
-
-                if "orderId" in res:
-                    price_executed = float(res["fills"][0]["price"]) if res.get("fills") else execution_price
-
-                    tp_price = price_executed * (1 + TAKE_PROFIT_PERCENT / 100)
-                    sl_price = price_executed * (1 - STOP_LOSS_PERCENT / 100)
-
-                    trade_result = {
-                        "side": side,
-                        "amount": amount_usdc,
-                        "status": "✅ Live Trade Executed",
-                        "price": f"${price_executed:.4f}",
-                        "tx_hash": str(res["orderId"]),
-                        "tp_price": round(tp_price, 4),
-                        "sl_price": round(sl_price, 4)
-                    }
-                    break
-                else:
-                    raise Exception(res.get("msg", "Trade failed"))
+                break
+            else:
+                raise Exception(res.get("msg", "Trade failed"))
 
         except Exception as e:
-            print(f"🔥 Attempt {attempt + 1} TRADE ERROR:", str(e))
-            if attempt == retries - 1:
+            print(f"🔥 Attempt {attempt} TRADE ERROR: {e}")
+            if attempt == retries:
                 trade_result = {
                     "side": side,
                     "amount": amount_usdc,
@@ -106,8 +109,8 @@ def execute_binance_trade(side: str, amount_usdc=TRADE_AMOUNT, live=LIVE_MODE, s
                 }
             else:
                 time.sleep(1.5)
-                continue
 
+    # Log trade
     save_trade({
         "timestamp": datetime.utcnow().isoformat(),
         "side": trade_result.get("side"),
@@ -115,8 +118,8 @@ def execute_binance_trade(side: str, amount_usdc=TRADE_AMOUNT, live=LIVE_MODE, s
         "status": trade_result.get("status"),
         "price": trade_result.get("price"),
         "tx_hash": trade_result.get("tx_hash"),
-        "tp_price": trade_result.get("tp_price", None),
-        "sl_price": trade_result.get("sl_price", None)
+        "tp_price": trade_result.get("tp_price"),
+        "sl_price": trade_result.get("sl_price")
     })
 
     return trade_result
