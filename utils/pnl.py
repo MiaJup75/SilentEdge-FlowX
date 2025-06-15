@@ -1,62 +1,35 @@
 import sqlite3
-import os
 from datetime import datetime, timedelta
+import os
 from utils.charts import generate_pnl_chart
 
-DB_PATH = os.getenv("TRADE_DB_PATH", "trades.db")
+DB_PATH = os.getenv("TRADE_DB_PATH", "trades.db")  # Futureproof: ENV override allowed
 TRADE_HISTORY_MAX = int(os.getenv("TRADE_HISTORY_MAX", 30))
 
-# === Optional External Logger Stub ===
-def log_to_webhook(trade: dict):
-    webhook = os.getenv("LOGGING_WEBHOOK_URL")
-    if not webhook:
-        return
-    try:
-        import requests
-        requests.post(webhook, json=trade)
-    except Exception as e:
-        print(f"❌ Remote logging failed: {e}")
-
-# === Enhanced Trade Logger with Symbol Support ===
+# === Enhanced Trade Logger ===
 def log_trade(side, amount, price, status, tx_hash, result=None, symbol=None):
-    try:
-        with sqlite3.connect(DB_PATH) as conn:
-            c = conn.cursor()
-            c.execute('''
-                CREATE TABLE IF NOT EXISTS trades (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    side TEXT NOT NULL,
-                    amount REAL NOT NULL,
-                    price REAL,
-                    status TEXT,
-                    tx_hash TEXT,
-                    result TEXT,
-                    symbol TEXT,
-                    timestamp TEXT NOT NULL
-                )
-            ''')
-            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            c.execute('''
-                INSERT INTO trades (side, amount, price, status, tx_hash, result, symbol, timestamp)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            ''', (side, amount, price, status, tx_hash, result, symbol, timestamp))
+    with sqlite3.connect(DB_PATH) as conn:
+        c = conn.cursor()
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS trades (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                side TEXT NOT NULL,
+                amount REAL NOT NULL,
+                price REAL,
+                status TEXT,
+                tx_hash TEXT,
+                result TEXT,
+                symbol TEXT,
+                timestamp TEXT NOT NULL
+            )
+        ''')
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        c.execute('''
+            INSERT INTO trades (side, amount, price, status, tx_hash, result, symbol, timestamp)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (side, amount, price, status, tx_hash, result, symbol, timestamp))
 
-        # Optional remote logging
-        log_to_webhook({
-            "side": side,
-            "amount": amount,
-            "price": price,
-            "status": status,
-            "tx_hash": tx_hash,
-            "result": result,
-            "symbol": symbol,
-            "timestamp": timestamp
-        })
-
-    except Exception as e:
-        print(f"⚠️ Failed to log trade: {e}")
-
-# === Dynamic Time Window PnL (All Coins or Per Token) ===
+# === Dynamic Time Window PnL ===
 def calculate_daily_pnl(day="today", symbol=None):
     try:
         now = datetime.now()
@@ -76,10 +49,7 @@ def calculate_daily_pnl(day="today", symbol=None):
 
         with sqlite3.connect(DB_PATH) as conn:
             c = conn.cursor()
-            query = '''
-                SELECT side, amount, price, result FROM trades
-                WHERE timestamp BETWEEN ? AND ?
-            '''
+            query = '''SELECT side, amount, price, result FROM trades WHERE timestamp BETWEEN ? AND ?'''
             params = [start.strftime("%Y-%m-%d %H:%M:%S"), end.strftime("%Y-%m-%d %H:%M:%S")]
 
             if symbol:
@@ -89,7 +59,7 @@ def calculate_daily_pnl(day="today", symbol=None):
             c.execute(query, params)
             rows = c.fetchall()
 
-        total_buy = total_sell = win_count = total_trades = 0
+        total_buy, total_sell, win_count, total_trades = 0, 0, 0, 0
         history = []
 
         for side, amount, price, result in rows:
@@ -126,7 +96,7 @@ def calculate_daily_pnl(day="today", symbol=None):
             "history": []
         }
 
-# === PnL Summary Formatter ===
+# === PnL Formatter ===
 def format_pnl_summary(pnl_data: dict) -> str:
     try:
         net = pnl_data.get("net_pnl", 0)
@@ -146,19 +116,19 @@ def format_pnl_summary(pnl_data: dict) -> str:
     except Exception as e:
         return f"<b>❌ PnL Format Error:</b> {e}"
 
-# === Adaptive Time Window Picker ===
-def calculate_auto_pnl(symbol=None):
-    today = calculate_daily_pnl("today", symbol)
+# === Auto-Picker for Best Window ===
+def calculate_auto_pnl():
+    today = calculate_daily_pnl("today")
     if today["trades"] >= 3:
         return today
 
-    last7d = calculate_daily_pnl("7d", symbol)
+    last7d = calculate_daily_pnl("7d")
     if last7d["trades"] >= 3:
         return last7d
 
-    return calculate_daily_pnl("30d", symbol)
+    return calculate_daily_pnl("30d")
 
-# === Win Rate Emoji Grader ===
+# === Emoji Grader ===
 def score_emoji(win_rate):
     if win_rate >= 80:
         return "🔥"
