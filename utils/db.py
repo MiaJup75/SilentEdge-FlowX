@@ -1,4 +1,4 @@
-# db.py
+# utils/db.py
 
 import json
 import os
@@ -7,7 +7,10 @@ from datetime import datetime
 LOG_FILE = "trade_log.json"
 
 def save_trade(trade: dict):
-    """Append a new trade entry to the log file."""
+    """
+    Append a new trade entry to the JSON log file.
+    Ensures timestamp and auto-increment structure.
+    """
     try:
         if "timestamp" not in trade:
             trade["timestamp"] = datetime.utcnow().isoformat()
@@ -27,7 +30,9 @@ def save_trade(trade: dict):
         print(f"❌ Error saving trade log: {e}")
 
 def load_trades():
-    """Load all trade entries."""
+    """
+    Return a list of all trade entries from the JSON log.
+    """
     try:
         if not os.path.exists(LOG_FILE):
             return []
