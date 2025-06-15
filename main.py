@@ -533,10 +533,7 @@ def main():
     dispatcher.add_handler(CallbackQueryHandler(button))
     dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, fallback_message))
 
-   
 
-     # Handle inline button callbacks
-    dispatcher.add_handler(CallbackQueryHandler(button))
 
     # Catch-all for non-command messages
     dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, fallback_message))
