@@ -6,9 +6,7 @@ import requests
 import hmac
 import hashlib
 import os
-import base64
 import json
-import uuid
 
 # === Load Binance API Credentials ===
 BINANCE_API_KEY = os.getenv("BINANCE_API_KEY")
@@ -35,59 +33,71 @@ def sign_payload(params):
     return f"{query}&signature={signature}"
 
 
-def execute_binance_trade(side: str, amount_usdc=TRADE_AMOUNT, live=LIVE_MODE, slippage=SLIPPAGE_TOLERANCE):
+def execute_binance_trade(side: str, amount_usdc=TRADE_AMOUNT, live=LIVE_MODE, slippage=SLIPPAGE_TOLERANCE, retries=3):
     trade_result = {}
     symbol = f"{BASE_TOKEN}{QUOTE_TOKEN}"
 
-    if not live:
-        mock_price = round(get_binance_price(symbol), 4)
-        trade_result = {
-            "side": side,
-            "amount": amount_usdc,
-            "status": "✅ Simulated Trade",
-            "price": f"${mock_price}",
-            "tx_hash": "sim_tx_" + str(int(time.time()))
-        }
-
-    else:
+    for attempt in range(retries):
         try:
-            timestamp = int(time.time() * 1000)
-            params = {
-                "symbol": symbol,
-                "side": side.upper(),
-                "type": "MARKET",
-                "quoteOrderQty": amount_usdc,
-                "timestamp": timestamp
-            }
+            execution_price = get_binance_price(symbol)
+            if not execution_price:
+                raise Exception("Price fetch failed")
 
-            headers = {"X-MBX-APIKEY": BINANCE_API_KEY}
-            payload = sign_payload(params)
+            min_price = execution_price * (1 - slippage / 100)
+            max_price = execution_price * (1 + slippage / 100)
 
-            url = f"{BASE_URL}{ORDER_ENDPOINT}?{payload}"
-            response = requests.post(url, headers=headers)
-            res = response.json()
-
-            if "orderId" in res:
-                price_executed = res["fills"][0]["price"] if res.get("fills") else "?"
+            if not live:
                 trade_result = {
                     "side": side,
                     "amount": amount_usdc,
-                    "status": "✅ Live Trade Executed",
-                    "price": f"${price_executed}",
-                    "tx_hash": str(res["orderId"])
+                    "status": "✅ Simulated Trade",
+                    "price": f"${execution_price:.4f}",
+                    "tx_hash": "sim_tx_" + str(int(time.time()))
                 }
+                break
+
             else:
-                raise Exception(res.get("msg", "Trade failed"))
+                timestamp = int(time.time() * 1000)
+                params = {
+                    "symbol": symbol,
+                    "side": side.upper(),
+                    "type": "MARKET",
+                    "quoteOrderQty": amount_usdc,
+                    "timestamp": timestamp
+                }
+
+                headers = {"X-MBX-APIKEY": BINANCE_API_KEY}
+                payload = sign_payload(params)
+                url = f"{BASE_URL}{ORDER_ENDPOINT}?{payload}"
+                response = requests.post(url, headers=headers)
+                res = response.json()
+
+                if "orderId" in res:
+                    price_executed = res["fills"][0]["price"] if res.get("fills") else str(execution_price)
+                    trade_result = {
+                        "side": side,
+                        "amount": amount_usdc,
+                        "status": "✅ Live Trade Executed",
+                        "price": f"${price_executed}",
+                        "tx_hash": str(res["orderId"])
+                    }
+                    break
+                else:
+                    raise Exception(res.get("msg", "Trade failed"))
 
         except Exception as e:
-            print("🔥 TRADE ERROR:", str(e))
-            trade_result = {
-                "side": side,
-                "amount": amount_usdc,
-                "status": f"❌ Error: {str(e)}",
-                "price": "N/A",
-                "tx_hash": "N/A"
-            }
+            print(f"🔥 Attempt {attempt + 1} TRADE ERROR:", str(e))
+            if attempt == retries - 1:
+                trade_result = {
+                    "side": side,
+                    "amount": amount_usdc,
+                    "status": f"❌ Error: {str(e)}",
+                    "price": "N/A",
+                    "tx_hash": "N/A"
+                }
+            else:
+                time.sleep(1.5)
+                continue
 
     save_trade({
         "timestamp": datetime.utcnow().isoformat(),
@@ -99,3 +109,7 @@ def execute_binance_trade(side: str, amount_usdc=TRADE_AMOUNT, live=LIVE_MODE, s
     })
 
     return trade_result
+
+
+if __name__ == '__main__':
+    print(execute_binance_trade("BUY", 50, live=False))
