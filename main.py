@@ -525,12 +525,15 @@ def main():
     dispatcher.add_handler(CommandHandler("pause", pause))
     dispatcher.add_handler(CommandHandler("limit", limit))
 
+
+    dispatcher.add_handler(withdraw_all_handler)
+    dispatcher.add_handler(confirm_all_handler)
+
     dispatcher.add_handler(CallbackQueryHandler(handle_pnl_button, pattern="^pnl:"))
     dispatcher.add_handler(CallbackQueryHandler(button))
     dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, fallback_message))
 
-    dispatcher.add_handler(withdraw_all_handler)
-    dispatcher.add_handler(confirm_all_handler)
+   
 
      # Handle inline button callbacks
     dispatcher.add_handler(CallbackQueryHandler(button))
