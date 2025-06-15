@@ -1,3 +1,5 @@
+# === utils/format_balance.py ===
+
 def format_balance_message(balances: dict) -> str:
     if not balances:
         return "⚠️ No tokens found in this wallet."
@@ -13,9 +15,9 @@ def format_balance_message(balances: dict) -> str:
         icon = {
             "SOL": "🟡",
             "USDC": "💵",
-            "wBTC": "🟠",
-            "wETH": "🟣",
-            "wXRP": "💧"
+            "BTC": "₿",
+            "ETH": "🧪",
+            "XRP": "💧"
         }.get(token, "🔹")
 
         line = f"{icon} <b>{token}</b>: {amount} ≈ <b>${usd_value}</b>"
