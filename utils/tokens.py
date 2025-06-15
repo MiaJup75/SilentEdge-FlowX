@@ -29,19 +29,14 @@ def transfer_spl_token(mint: str, recipient: str, amount: float, decimals: int =
     txn.add(
         transfer_checked(
             source=sender_ata,
-            dest=recipient_ata,
-            owner=sender_pubkey,
             mint=mint_pubkey,
+            destination=recipient_ata,
+            owner=sender_pubkey,
             amount=lamports,
             decimals=decimals
         )
     )
 
-    # ✅ FIXED: Use list of signers and pass transaction options
-    res = client.send_transaction(
-        txn,
-        [sender_keypair],
-        opts={"skip_preflight": True, "preflight_commitment": "confirmed"}
-    )
-
+    # Send the transaction
+    res = client.send_transaction(txn, [sender_keypair])
     return res["result"]
