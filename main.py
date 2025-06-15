@@ -29,6 +29,7 @@ from utils.ping import check_jupiter_health
 from utils.gpt import ask_chatgpt
 from utils.reporting import send_daily_pnl_chart
 from utils.charts import generate_pnl_chart
+from utils.wallet_ops import withdraw_sol
 from utils.format import format_pnl_summary
 from utils.menu import get_main_menu
 from handlers.pnl_handlers import pnl, handle_pnl_button
@@ -446,6 +447,31 @@ def limit(update: Update, context: CallbackContext):
 from keep_alive import run as keep_alive_server
 import threading        
 
+
+def withdraw_command(update: Update, context: CallbackContext):
+    user_id = update.effective_user.id
+    if user_id != OWNER_ID:
+        update.message.reply_text("⛔ This command is restricted.")
+        return
+
+    if len(context.args) != 1:
+        update.message.reply_text("❗ Usage: /withdraw <recipient_wallet_address>")
+        return
+
+    recipient = context.args[0]
+    keyboard = [
+        [
+            InlineKeyboardButton("✅ Confirm", callback_data=f"confirm_withdraw:{recipient}"),
+            InlineKeyboardButton("❌ Cancel", callback_data="cancel_withdraw")
+        ]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    update.message.reply_text(
+        f"⚠️ You are about to withdraw all SOL to:\n<code>{recipient}</code>\n\nConfirm?",
+        reply_markup=reply_markup,
+        parse_mode=ParseMode.HTML
+    )
+
 # === Bot Launcher ===
 def main():
     if not TELEGRAM_TOKEN:
@@ -500,6 +526,7 @@ def main():
     dispatcher.add_handler(CallbackQueryHandler(handle_pnl_button, pattern="^pnl:"))
     dispatcher.add_handler(CallbackQueryHandler(button))
     dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, fallback_message))
+    dispatcher.add_handler(CommandHandler("withdraw", withdraw_command))
 
      # Handle inline button callbacks
     dispatcher.add_handler(CallbackQueryHandler(button))
