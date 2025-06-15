@@ -29,7 +29,6 @@ from utils.ping import check_jupiter_health
 from utils.gpt import ask_chatgpt
 from utils.reporting import send_daily_pnl_chart
 from utils.charts import generate_pnl_chart
-from utils.wallet_ops import withdraw_sol
 from utils.format import format_pnl_summary
 from utils.menu import get_main_menu
 from handlers.pnl_handlers import pnl, handle_pnl_button
@@ -41,6 +40,9 @@ from state_manager import (
     set_pause,
     set_limit
 )
+
+from utils.wallet_ops import withdraw_all_handler, confirm_all_handler
+
 
 # === Logger ===
 logging.basicConfig(
@@ -526,7 +528,9 @@ def main():
     dispatcher.add_handler(CallbackQueryHandler(handle_pnl_button, pattern="^pnl:"))
     dispatcher.add_handler(CallbackQueryHandler(button))
     dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, fallback_message))
-    dispatcher.add_handler(CommandHandler("withdraw", withdraw_command))
+
+    dispatcher.add_handler(withdraw_all_handler)
+    dispatcher.add_handler(confirm_all_handler)
 
      # Handle inline button callbacks
     dispatcher.add_handler(CallbackQueryHandler(button))
