@@ -37,8 +37,6 @@ from state_manager import (
     set_limit
 )
 
-from telegram.ext import CommandHandler
-
 # === Send TP/SL Test Alert ===
 send_alert("🚀 TP/SL watcher alert test successful.")
 
@@ -60,12 +58,12 @@ logger = logging.getLogger(__name__)
 from config import TRADE_AMOUNT, OWNER_ID, TELEGRAM_TOKEN, LIVE_MODE, PORT, WEBHOOK_URL, SLIPPAGE_TOLERANCE, BASE_TOKEN, QUOTE_TOKEN
 
 # === Debug Output ===
-print(\"🛠 Flow X Config Debug:\")
-print(\"→ BASE:\", BASE_TOKEN)
-print(\"→ QUOTE:\", QUOTE_TOKEN)
-print(\"→ TRADE_AMOUNT:\", TRADE_AMOUNT)
-print(\"→ SLIPPAGE:\", SLIPPAGE_TOLERANCE)
-print(\"→ LIVE_MODE:\", LIVE_MODE)
+print("🛠 Flow X Config Debug:")
+print("→ BASE:", BASE_TOKEN)
+print("→ QUOTE:", QUOTE_TOKEN)
+print("→ TRADE_AMOUNT:", TRADE_AMOUNT)
+print("→ SLIPPAGE:", SLIPPAGE_TOLERANCE)
+print("→ LIVE_MODE:", LIVE_MODE)
 
 # === Bot State ===
 bot_paused = False
@@ -76,13 +74,13 @@ trades_today = 0
 def start(update: Update, context: CallbackContext):
     user = update.effective_user
     chat_id = update.effective_chat.id
-    logger.info(f\"/start used by {user.username or user.id}\")
+    logger.info(f"/start used by {user.username or user.id}")
 
     welcome = (
-        \"🚀 <b>Welcome to Flow X Bot</b>\\n\\n\"
-        f\"<b>Mode:</b> ✅ <b>LIVE</b>\\n\"
-        f\"<b>Trade Size:</b> ${TRADE_AMOUNT:.2f}\\n\\n\"
-        \"Tap a button or type a command to begin. ⬇️\"
+        "🚀 <b>Welcome to Flow X Bot</b>\n\n"
+        f"<b>Mode:</b> ✅ <b>LIVE</b>\n"
+        f"<b>Trade Size:</b> ${TRADE_AMOUNT:.2f}\n\n"
+        "Tap a button or type a command to begin. ⬇️"
     )
 
     context.bot.send_message(
@@ -94,7 +92,7 @@ def start(update: Update, context: CallbackContext):
     try:
         pin_welcome_message(context.bot, chat_id)
     except Exception as e:
-        logger.warning(f\"Could not pin message: {e}\")
+        logger.warning(f"Could not pin message: {e}")
 
 # === Inline Button Handler ===
 def button(update: Update, context: CallbackContext):
@@ -228,7 +226,7 @@ def sell(update: Update, context: CallbackContext):
             parse_mode=ParseMode.HTML
         )
 
-        # === /help Command ===
+# === /help Command ===
 def help_cmd(update: Update, context: CallbackContext):
     try:
         update.message.reply_text("⏳ Loading help menu...")
@@ -285,7 +283,7 @@ def menu(update: Update, context: CallbackContext):
             parse_mode=ParseMode.HTML
         )
 
-        # === /pnl Command ===
+# === /pnl Command ===
 def pnl(update: Update, context: CallbackContext):
     try:
         arg = context.args[0].lower() if context.args else "auto"
@@ -328,7 +326,7 @@ def pnl(update: Update, context: CallbackContext):
             parse_mode=ParseMode.HTML
         )
 
-        # === /pause Command ===
+# === /pause Command ===
 def pause(update: Update, context: CallbackContext):
     user_id = update.effective_user.id
     if OWNER_ID and user_id != OWNER_ID:
@@ -371,7 +369,7 @@ def fallback_message(update: Update, context: CallbackContext):
         parse_mode=ParseMode.HTML
     )
 
-    # === Bot Launcher ===
+# === Bot Launcher ===
 def main():
     if not TELEGRAM_TOKEN:
         logger.error("❌ TELEGRAM_TOKEN missing. Cannot start bot.")
@@ -449,6 +447,6 @@ def main():
     # === Keep the Bot Alive ===
     updater.idle()
 
-    # === Entry Point ===
+# === Entry Point ===
 if __name__ == '__main__':
     main()
