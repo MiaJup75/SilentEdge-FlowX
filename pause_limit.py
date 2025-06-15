@@ -1,7 +1,9 @@
+# pause_limit.py
+
 from telegram import Update
 from telegram.ext import CallbackContext
-from state_manager import is_paused, set_pause, set_limit
 from config import OWNER_ID
+from state_manager import is_paused, set_pause, set_limit
 
 # === /pause Command ===
 def pause(update: Update, context: CallbackContext):
@@ -10,11 +12,11 @@ def pause(update: Update, context: CallbackContext):
         update.message.reply_text("⛔ Access denied.")
         return
 
-    current = is_paused()
-    set_pause(not current)
+    currently_paused = is_paused()
+    set_pause(not currently_paused)
 
     update.message.reply_text(
-        "⏸ Trading paused." if not current else "▶️ Trading resumed."
+        "⏸ Trading paused." if not currently_paused else "▶️ Trading resumed."
     )
 
 # === /limit Command ===
@@ -29,8 +31,8 @@ def limit(update: Update, context: CallbackContext):
         return
 
     try:
-        limit_value = int(context.args[0])
-        set_limit(limit_value)
-        update.message.reply_text(f"📉 Daily trade limit set to {limit_value}")
+        daily_limit = int(context.args[0])
+        set_limit(daily_limit)
+        update.message.reply_text(f"📉 Daily trade limit set to {daily_limit}")
     except ValueError:
         update.message.reply_text("⚠️ Please enter a valid number.")
