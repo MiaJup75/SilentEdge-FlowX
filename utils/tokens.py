@@ -2,6 +2,7 @@ import os
 from solana.publickey import PublicKey
 from solana.transaction import Transaction
 from solana.rpc.api import Client
+from spl.token.constants import TOKEN_PROGRAM_ID
 from spl.token.instructions import transfer_checked, get_associated_token_address
 from utils.signer import load_wallet_from_env
 
@@ -11,7 +12,7 @@ client = Client(SOLANA_RPC_URL)
 
 # === Transfer SPL Token Function ===
 def transfer_spl_token(mint: str, recipient: str, amount: float, decimals: int = 6) -> str:
-    # Load wallet and addresses
+    # Load wallet and keys
     sender_keypair = load_wallet_from_env()
     sender_pubkey = sender_keypair.public_key
     mint_pubkey = PublicKey(mint)
@@ -21,22 +22,23 @@ def transfer_spl_token(mint: str, recipient: str, amount: float, decimals: int =
     sender_ata = get_associated_token_address(sender_pubkey, mint_pubkey)
     recipient_ata = get_associated_token_address(recipient_pubkey, mint_pubkey)
 
-    # Convert amount to smallest unit
+    # Amount in smallest units
     lamports = int(amount * (10 ** decimals))
 
     # Create transfer transaction
     txn = Transaction()
     txn.add(
         transfer_checked(
-            source=sender_ata,
-            mint=mint_pubkey,
-            destination=recipient_ata,
-            owner=sender_pubkey,
-            amount=lamports,
-            decimals=decimals
+            TOKEN_PROGRAM_ID,          # <- Required program ID
+            sender_ata,                # source
+            mint_pubkey,               # mint
+            recipient_ata,             # destination
+            sender_pubkey,             # owner
+            lamports,                  # amount
+            decimals                   # decimals
         )
     )
 
-    # Send the transaction
-    res = client.send_transaction(txn, [sender_keypair])
+    # Send transaction
+    res = client.send_transaction(txn, sender_keypair)
     return res["result"]
