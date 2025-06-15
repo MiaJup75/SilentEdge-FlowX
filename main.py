@@ -37,8 +37,6 @@ from state_manager import (
     set_limit
 )
 
-logger.info("✅ TP/SL watcher thread started.")
-
 # === /reboot Command ===
 def reboot(update, context):
     user_id = str(update.effective_user.id)
@@ -53,6 +51,8 @@ logging.basicConfig(
     level=logging.INFO
 )
 logger = logging.getLogger(__name__)
+
+logger.info("✅ TP/SL watcher thread started.")
 
 from config import TRADE_AMOUNT, OWNER_ID, TELEGRAM_TOKEN, LIVE_MODE, PORT, WEBHOOK_URL, SLIPPAGE_TOLERANCE, BASE_TOKEN, QUOTE_TOKEN
 
