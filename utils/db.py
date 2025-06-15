@@ -1,5 +1,3 @@
-# utils/db.py
-
 import json
 import os
 from datetime import datetime
@@ -41,3 +39,18 @@ def load_trades():
     except Exception as e:
         print(f"⚠️ Error loading trades: {e}")
         return []
+
+def get_open_trades(symbol=None):
+    """
+    Return all open BUY trades from the log file (not closed by TP/SL).
+    """
+    trades = load_trades()
+    open_trades = []
+
+    for trade in trades:
+        # Consider as open if status includes 'Live' and side is BUY
+        if trade.get("side") == "BUY" and "Live" in trade.get("status", ""):
+            if symbol is None or symbol in trade.get("price", "") or symbol in trade.get("symbol", ""):
+                open_trades.append(trade)
+
+    return open_trades
