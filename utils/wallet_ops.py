@@ -87,5 +87,3 @@ def handle_withdraw_confirmation(update: Update, context: CallbackContext):
 # === Register with dispatcher (add these to your bot setup) ===
 withdraw_handler = CommandHandler("withdraw", withdraw)
 confirm_handler = CallbackQueryHandler(handle_withdraw_confirmation, pattern="^confirm_withdraw|cancel_withdraw$")
-dispatcher.add_handler(withdraw_handler)
-dispatcher.add_handler(confirm_handler)
