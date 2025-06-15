@@ -1,8 +1,8 @@
 import os
 import logging
 import traceback
-
 import sys
+
 sys.stdout.reconfigure(line_buffering=True)
 
 from telegram import (
@@ -13,26 +13,22 @@ from telegram.ext import (
     MessageHandler, Filters, CallbackContext
 )
 
-from utils.wallet import get_wallet_address, get_wallet_balance
-from utils.trade import execute_jupiter_trade
+from utils.binance_trade import execute_binance_trade
 from utils.pnl import calculate_daily_pnl, calculate_auto_pnl
 from utils.format import (
     format_trade_result,
-    format_balance_text,
     format_error_message,
     format_help_text,
-    format_debug_info
+    format_debug_info,
+    format_pnl_summary,
+    get_pnl_buttons
 )
-from utils.format import format_pnl_summary
-from utils.format import get_pnl_buttons
-from utils.ping import check_jupiter_health
-from utils.gpt import ask_chatgpt
 from utils.reporting import send_daily_pnl_chart
 from utils.charts import generate_pnl_chart
-from utils.format import format_pnl_summary
 from utils.menu import get_main_menu
 from handlers.pnl_handlers import pnl, handle_pnl_button
 from utils.pin import pin_welcome_message
+from utils.telegram_alerts import send_alert
 from state_manager import (
     is_paused,
     check_and_increment_trade_count,
@@ -41,31 +37,20 @@ from state_manager import (
     set_limit
 )
 
-from handlers.ping import run_health_check
+from telegram.ext import CommandHandler
 
-from utils.telegram_alerts import send_alert
-
+# === Send TP/SL Test Alert ===
 send_alert("🚀 TP/SL watcher alert test successful.")
 
-from telegram.ext import CommandHandler
-import os
-
+# === /reboot Command ===
 def reboot(update, context):
     user_id = str(update.effective_user.id)
     if user_id == os.getenv("TELEGRAM_USER_ID"):
         update.message.reply_text("♻️ Rebooting bot... (manual action may be required on Render)")
-        # This just simulates reboot notice. Real reboot = use Render UI or webhook ping
     else:
         update.message.reply_text("🚫 You are not authorized to reboot the bot.")
 
-dispatcher.add_handler(CommandHandler("reboot", reboot))
-
-def ping(update, context):
-    report = run_health_check()
-    update.message.reply_text(report, parse_mode="HTML")
-
-
-# === Logger ===
+# === Logger Setup ===
 logging.basicConfig(
     format='%(asctime)s - %(levelname)s - %(message)s',
     level=logging.INFO
@@ -74,40 +59,30 @@ logger = logging.getLogger(__name__)
 
 from config import TRADE_AMOUNT, OWNER_ID, TELEGRAM_TOKEN, LIVE_MODE, PORT, WEBHOOK_URL, SLIPPAGE_TOLERANCE, BASE_TOKEN, QUOTE_TOKEN
 
+# === Debug Output ===
+print(\"🛠 Flow X Config Debug:\")
+print(\"→ BASE:\", BASE_TOKEN)
+print(\"→ QUOTE:\", QUOTE_TOKEN)
+print(\"→ TRADE_AMOUNT:\", TRADE_AMOUNT)
+print(\"→ SLIPPAGE:\", SLIPPAGE_TOLERANCE)
+print(\"→ LIVE_MODE:\", LIVE_MODE)
 
-# === Debug Output for Confirmation ===
-print("🛠 Flow X Config Debug:")
-print("→ BASE:", BASE_TOKEN)
-print("→ QUOTE:", QUOTE_TOKEN)
-print("→ TRADE_AMOUNT:", TRADE_AMOUNT)
-print("→ SLIPPAGE:", SLIPPAGE_TOLERANCE)
-print("→ LIVE_MODE:", LIVE_MODE)
-
-# === Bot State Flags ===
+# === Bot State ===
 bot_paused = False
 daily_trade_limit = 20
 trades_today = 0
 
-try:
-    balance = get_wallet_balance(get_wallet_address())
-    print("🧠 Wallet Address:", get_wallet_address())
-    print("💰 Wallet Balance:", balance)
-except Exception as e:
-    logger.warning(f"Could not fetch balance: {e}")
-    balance = {}
-
-# === Start Command ===
+# === /start Command ===
 def start(update: Update, context: CallbackContext):
     user = update.effective_user
     chat_id = update.effective_chat.id
-    logger.info(f"/start used by {user.username or user.id}")
+    logger.info(f\"/start used by {user.username or user.id}\")
 
     welcome = (
-        "🚀 <b>Welcome to Flow X Bot</b>\n\n"
-        f"<b>Wallet:</b> <code>{get_wallet_address()}</code>\n"
-        "<b>Mode:</b> ✅ <b>LIVE</b>\n"
-        f"<b>Trade Size:</b> ${TRADE_AMOUNT:.2f}\n\n"
-        "Tap a button or type a command to begin. ⬇️"
+        \"🚀 <b>Welcome to Flow X Bot</b>\\n\\n\"
+        f\"<b>Mode:</b> ✅ <b>LIVE</b>\\n\"
+        f\"<b>Trade Size:</b> ${TRADE_AMOUNT:.2f}\\n\\n\"
+        \"Tap a button or type a command to begin. ⬇️\"
     )
 
     context.bot.send_message(
@@ -116,12 +91,12 @@ def start(update: Update, context: CallbackContext):
         parse_mode=ParseMode.HTML
     )
 
-    # Pin the welcome message
     try:
         pin_welcome_message(context.bot, chat_id)
     except Exception as e:
-        logger.warning(f"Could not pin message: {e}")
-        # === Button Handler ===
+        logger.warning(f\"Could not pin message: {e}\")
+
+# === Inline Button Handler ===
 def button(update: Update, context: CallbackContext):
     query = update.callback_query
     user_id = update.effective_user.id
@@ -132,7 +107,6 @@ def button(update: Update, context: CallbackContext):
 
     try:
         if action in ["buy", "sell"]:
-            # === Trade Guard ===
             if is_paused():
                 query.edit_message_text("⛔ Trading is currently paused.")
                 return
@@ -141,22 +115,14 @@ def button(update: Update, context: CallbackContext):
                 return
 
             query.edit_message_text("⏳ Executing trade...")
-            result = execute_jupiter_trade(
+            result = execute_binance_trade(
                 side=action.upper(),
                 amount_usdc=TRADE_AMOUNT,
-                live=True,
+                live=LIVE_MODE,
                 slippage=SLIPPAGE_TOLERANCE
             )
             query.edit_message_text(
                 text=format_trade_result(result),
-                parse_mode=ParseMode.HTML
-             )
-
-        elif action == "balance":
-            query.edit_message_text("⏳ Fetching balance...")
-            balances, balance_text = get_wallet_balance(get_wallet_address())
-            query.edit_message_text(
-                text=balance_text,
                 parse_mode=ParseMode.HTML
             )
 
@@ -174,12 +140,6 @@ def button(update: Update, context: CallbackContext):
                 parse_mode=ParseMode.HTML
             )
 
-        elif action == "ping":
-            query.edit_message_text(
-                text=check_jupiter_health(),
-                parse_mode=ParseMode.HTML
-            )
-        
         elif action.startswith("pnl:"):
             view = action.split(":")[1]
             report = calculate_daily_pnl(view)
@@ -199,12 +159,6 @@ def button(update: Update, context: CallbackContext):
                 parse_mode=ParseMode.HTML
             )
 
-        elif action.startswith("link:"):
-            label = action.split(":")[1]
-            query.edit_message_text(
-                text=f"🔗 Redirecting to {label} bot..."
-            )
-
         else:
             query.edit_message_text(
                 text="⚠️ Unknown action selected.",
@@ -218,9 +172,9 @@ def button(update: Update, context: CallbackContext):
             parse_mode=ParseMode.HTML
         )
 
+# === /buy Command ===
 def buy(update: Update, context: CallbackContext):
     try:
-        # === Trade Guard ===
         if is_paused():
             update.message.reply_text("⛔ Trading is currently paused.")
             return
@@ -229,10 +183,10 @@ def buy(update: Update, context: CallbackContext):
             return
 
         update.message.reply_text("⏳ Executing buy trade...")
-        result = execute_jupiter_trade(
+        result = execute_binance_trade(
             side="BUY",
             amount_usdc=TRADE_AMOUNT,
-            live=True,
+            live=LIVE_MODE,
             slippage=SLIPPAGE_TOLERANCE
         )
         update.message.reply_text(
@@ -246,10 +200,9 @@ def buy(update: Update, context: CallbackContext):
             parse_mode=ParseMode.HTML
         )
 
-
+# === /sell Command ===
 def sell(update: Update, context: CallbackContext):
     try:
-        # === Trade Guard ===
         if is_paused():
             update.message.reply_text("⛔ Trading is currently paused.")
             return
@@ -258,10 +211,10 @@ def sell(update: Update, context: CallbackContext):
             return
 
         update.message.reply_text("⏳ Executing sell trade...")
-        result = execute_jupiter_trade(
+        result = execute_binance_trade(
             side="SELL",
             amount_usdc=TRADE_AMOUNT,
-            live=True,
+            live=LIVE_MODE,
             slippage=SLIPPAGE_TOLERANCE
         )
         update.message.reply_text(
@@ -275,38 +228,7 @@ def sell(update: Update, context: CallbackContext):
             parse_mode=ParseMode.HTML
         )
 
-# === /balance Command ===
-def balance(update: Update, context: CallbackContext):
-    try:
-        update.message.reply_text("⏳ Fetching balance...")
-        balances, balance_text = get_wallet_balance(get_wallet_address())
-        update.message.reply_text(
-            balance_text,
-            parse_mode=ParseMode.HTML
-        )
-    except Exception as e:
-        logger.error(f"/balance error: {e}")
-        update.message.reply_text(
-            format_error_message(f"❌ Format Error\n<code>{e}</code>"),
-            parse_mode=ParseMode.HTML
-        )
-
-# === /ping Command ===
-def ping(update: Update, context: CallbackContext):
-    try:
-        update.message.reply_text("⏳ Checking Jupiter status...")
-        ping_text = check_jupiter_health()
-        update.message.reply_text(
-            ping_text,
-            parse_mode=ParseMode.HTML
-        )
-    except Exception as e:
-        logger.error(f"/ping error: {e}")
-        update.message.reply_text(
-            format_error_message("❌ Ping check failed."),
-            parse_mode=ParseMode.HTML
-        )
-# === /help Command ===
+        # === /help Command ===
 def help_cmd(update: Update, context: CallbackContext):
     try:
         update.message.reply_text("⏳ Loading help menu...")
@@ -326,7 +248,7 @@ def help_cmd(update: Update, context: CallbackContext):
 def debug(update: Update, context: CallbackContext):
     try:
         update.message.reply_text("⏳ Gathering debug info...")
-        debug_text = format_debug_info(get_wallet_address(), True, TRADE_AMOUNT)
+        debug_text = format_debug_info("Binance", True, TRADE_AMOUNT)
         update.message.reply_text(
             debug_text,
             parse_mode=ParseMode.HTML
@@ -343,7 +265,6 @@ def menu(update: Update, context: CallbackContext):
     try:
         update.message.reply_text("⏳ Loading menu...")
 
-        # Get live state data
         from state_manager import load_state
         state = load_state()
         trades_today = state.get("trades_today", 0)
@@ -364,9 +285,9 @@ def menu(update: Update, context: CallbackContext):
             parse_mode=ParseMode.HTML
         )
 
+        # === /pnl Command ===
 def pnl(update: Update, context: CallbackContext):
     try:
-        # Determine time range
         arg = context.args[0].lower() if context.args else "auto"
         valid = ["today", "yesterday", "7d", "30d", "alltime"]
         if arg not in valid:
@@ -374,12 +295,10 @@ def pnl(update: Update, context: CallbackContext):
             return
         day = arg
 
-        # Pull PnL data
         report = calculate_auto_pnl() if day == "auto" else calculate_daily_pnl(day)
         summary = format_pnl_summary(report)
         chart_path = generate_pnl_chart(report["history"], label=day)
 
-        # Send chart if available
         if os.path.exists(chart_path):
             with open(chart_path, "rb") as img:
                 update.message.reply_photo(
@@ -409,32 +328,7 @@ def pnl(update: Update, context: CallbackContext):
             parse_mode=ParseMode.HTML
         )
 
-# === /aiprompt Command ===
-def aiprompt(update: Update, context: CallbackContext):
-    user_id = update.effective_user.id
-    if OWNER_ID and user_id != OWNER_ID:
-        update.message.reply_text("⛔ Access denied.")
-        return
-
-    prompt = ' '.join(context.args)
-    if not prompt:
-        update.message.reply_text("💬 Please enter a prompt after /aiprompt.")
-        return
-
-    try:
-        update.message.reply_text("⏳ Asking ChatGPT...")
-        response = ask_chatgpt(prompt)
-        update.message.reply_text(
-            f"🤖 <b>ChatGPT:</b>\n{response}",
-            parse_mode=ParseMode.HTML
-        )
-    except Exception as e:
-        logger.error(f"/aiprompt error: {e}")
-        update.message.reply_text(
-            format_error_message("❌ ChatGPT failed."),
-            parse_mode=ParseMode.HTML
-        )
-
+        # === /pause Command ===
 def pause(update: Update, context: CallbackContext):
     user_id = update.effective_user.id
     if OWNER_ID and user_id != OWNER_ID:
@@ -446,7 +340,8 @@ def pause(update: Update, context: CallbackContext):
     update.message.reply_text(
         f"{'⏸️ Trading paused.' if not current else '▶️ Trading resumed.'}"
     )
-    
+
+# === /limit Command ===
 def limit(update: Update, context: CallbackContext):
     user_id = update.effective_user.id
     if OWNER_ID and user_id != OWNER_ID:
@@ -464,38 +359,19 @@ def limit(update: Update, context: CallbackContext):
     except ValueError:
         update.message.reply_text("⚠️ Please enter a valid number.")
 
-    PORT = int(os.environ.get("PORT", "10000"))
-    WEBHOOK_URL = os.environ.get("WEBHOOK_URL")
+# === Timezone Setup ===
+import pytz
+import datetime
+bkk_tz = pytz.timezone("Asia/Bangkok")
 
-from keep_alive import run as keep_alive_server
-import threading        
-
-
-def withdraw_command(update: Update, context: CallbackContext):
-    user_id = update.effective_user.id
-    if user_id != OWNER_ID:
-        update.message.reply_text("⛔ This command is restricted.")
-        return
-
-    if len(context.args) != 1:
-        update.message.reply_text("❗ Usage: /withdraw <recipient_wallet_address>")
-        return
-
-    recipient = context.args[0]
-    keyboard = [
-        [
-            InlineKeyboardButton("✅ Confirm", callback_data=f"confirm_withdraw:{recipient}"),
-            InlineKeyboardButton("❌ Cancel", callback_data="cancel_withdraw")
-        ]
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
+# === Fallback Text ===
+def fallback_message(update: Update, context: CallbackContext):
     update.message.reply_text(
-        f"⚠️ You are about to withdraw all SOL to:\n<code>{recipient}</code>\n\nConfirm?",
-        reply_markup=reply_markup,
+        "🤖 I didn’t understand that. Use /menu to get started.",
         parse_mode=ParseMode.HTML
     )
 
-# === Bot Launcher ===
+    # === Bot Launcher ===
 def main():
     if not TELEGRAM_TOKEN:
         logger.error("❌ TELEGRAM_TOKEN missing. Cannot start bot.")
@@ -506,17 +382,16 @@ def main():
     dispatcher = updater.dispatcher
     job_queue = updater.job_queue
 
-    # Start keep-alive Flask server in background
-    from keep_alive import run as keep_alive_server
+    # === Start TP/SL Watcher in Background ===
+    from utils.tp_sl_watcher import monitor_trades
     import threading
+    threading.Thread(target=monitor_trades, daemon=True).start()
+
+    # === Start Keep-Alive Server (optional) ===
+    from keep_alive import run as keep_alive_server
     threading.Thread(target=keep_alive_server).start()
 
-import threading
-from utils.tp_sl_watcher import monitor_trades
-
-# 🔁 Start TP/SL monitor in background
-threading.Thread(target=monitor_trades, daemon=True).start()
-    
+    # === Webhook Launch ===
     updater.start_webhook(
         listen="0.0.0.0",
         port=PORT,
@@ -524,37 +399,33 @@ threading.Thread(target=monitor_trades, daemon=True).start()
         webhook_url=f"{WEBHOOK_URL}/{TELEGRAM_TOKEN}"
     )
 
-    # ✅ Register slash commands for Telegram interface
+    # === Register Slash Commands ===
     updater.bot.set_my_commands([
         ("start", "Launch bot"),
         ("buy", "Execute Buy Trade"),
         ("sell", "Execute Sell Trade"),
-        ("balance", "Wallet Balance"),
         ("pnl", "PnL Summary"),
-        ("ping", "Jupiter Check"),
-        ("help", "Help Menu"),
-        ("debug", "Bot Status"),
         ("menu", "Show Buttons"),
-        ("aiprompt", "Ask ChatGPT")
+        ("debug", "Bot Status"),
+        ("help", "Help Menu"),
+        ("pause", "Pause/Resume Trading"),
+        ("limit", "Set Daily Trade Limit"),
+        ("reboot", "Restart Bot")
     ])
-    
-    # ✅ Insert this here (new block starts)
+
+    # === Register Handlers ===
     dispatcher.add_handler(CommandHandler("start", start))
     dispatcher.add_handler(CommandHandler("buy", buy))
     dispatcher.add_handler(CommandHandler("sell", sell))
-    dispatcher.add_handler(CommandHandler("balance", balance))
     dispatcher.add_handler(CommandHandler("pnl", pnl))
-    dispatcher.add_handler(CommandHandler("ping", ping))
-    dispatcher.add_handler(CommandHandler("help", help_cmd))
-    dispatcher.add_handler(CommandHandler("debug", debug))
     dispatcher.add_handler(CommandHandler("menu", menu))
-    dispatcher.add_handler(CommandHandler("aiprompt", aiprompt))
+    dispatcher.add_handler(CommandHandler("debug", debug))
+    dispatcher.add_handler(CommandHandler("help", help_cmd))
     dispatcher.add_handler(CommandHandler("pause", pause))
     dispatcher.add_handler(CommandHandler("limit", limit))
+    dispatcher.add_handler(CommandHandler("reboot", reboot))
 
-    # === Dynamically register symbol-specific PnL commands ===
-    from utils.pnl import calculate_daily_pnl
-
+    # === Register Dynamic Symbol PnL Commands ===
     def generate_pnl_handler(symbol):
         def handler(update, context):
             result = calculate_daily_pnl("7d", symbol=symbol.upper())
@@ -564,39 +435,20 @@ threading.Thread(target=monitor_trades, daemon=True).start()
     for coin in ["BTC", "ETH", "SOL", "XRP"]:
         dispatcher.add_handler(CommandHandler(f"pnl{coin.lower()}", generate_pnl_handler(coin)))
 
+    # === Register Callback and Fallback ===
     dispatcher.add_handler(CallbackQueryHandler(handle_pnl_button, pattern="^pnl:"))
     dispatcher.add_handler(CallbackQueryHandler(button))
     dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, fallback_message))
 
-
-
-    # Catch-all for non-command messages
-    dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, fallback_message))
-
-    # ✅ Register scheduled jobs inside main
+    # === Schedule Daily PnL Chart Job (9AM BKK) ===
     job_queue.run_daily(
         send_daily_pnl_chart,
         time=datetime.time(hour=9, minute=0, tzinfo=bkk_tz)
     )
 
-    # ✅ Keep the bot running
+    # === Keep the Bot Alive ===
     updater.idle()
 
-
-# === Timezone Setup + Imports ===
-import pytz
-import datetime
-
-# Set timezone
-bkk_tz = pytz.timezone("Asia/Bangkok")
-
-# === Fallback Text Response ===
-def fallback_message(update: Update, context: CallbackContext):
-    update.message.reply_text(
-        "🤖 I didn’t understand that. Use /menu to get started.",
-        parse_mode=ParseMode.HTML
-    )
-
-# === Run Bot ===
+    # === Entry Point ===
 if __name__ == '__main__':
     main()
