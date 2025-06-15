@@ -1,47 +1,38 @@
-# === utils/ask_chatgpt.py ===
-
+# === utils/chatgpt.py ===
 import os
 import openai
 import time
 
-# Load API key and defaults
+# === Environment Configuration ===
 openai.api_key = os.getenv("OPENAI_API_KEY")
-MODEL = os.getenv("OPENAI_MODEL", "gpt-4")
-TIMEOUT = int(os.getenv("OPENAI_TIMEOUT", 10))
-MAX_RETRIES = 3
-RETRY_DELAY = 2  # base delay in seconds
+GPT_MODEL = os.getenv("OPENAI_MODEL", "gpt-4")
+GPT_TIMEOUT = int(os.getenv("OPENAI_TIMEOUT", "15"))
+GPT_TEMP = float(os.getenv("GPT_TEMP", "0.7"))
+GPT_SYSTEM_PROMPT = os.getenv("OPENAI_SYSTEM_PROMPT", "You are a top 0.0001% crypto trading assistant. Be concise.")
+GPT_ENABLED = os.getenv("GPT_ENABLED", "true").lower() == "true"
+GPT_RETRY_MAX = int(os.getenv("GPT_RETRY_MAX", "2"))
+GPT_PERSONA_ID = os.getenv("GPT_PERSONA_ID", "default")
 
-# Optional system prompt (for AI persona or trading rules)
-SYSTEM_PROMPT = os.getenv("OPENAI_SYSTEM_PROMPT", "You are a crypto trading assistant. Answer clearly and concisely.")
+# === Ask ChatGPT Handler ===
+def ask_chatgpt(prompt):
+    if not GPT_ENABLED:
+        return "⚠️ GPT is currently disabled by admin."
 
-def ask_chatgpt(prompt: str, temperature: float = 0.7) -> str:
-    """
-    Sends a prompt to OpenAI's ChatGPT and returns a formatted response.
-    Retries automatically on failure.
-
-    Args:
-        prompt (str): The user's message
-        temperature (float): Creativity level
-
-    Returns:
-        str: ChatGPT response (formatted for Telegram)
-    """
-    for attempt in range(1, MAX_RETRIES + 1):
+    retries = 0
+    while retries <= GPT_RETRY_MAX:
         try:
             response = openai.ChatCompletion.create(
-                model=MODEL,
+                model=GPT_MODEL,
+                timeout=GPT_TIMEOUT,
+                temperature=GPT_TEMP,
                 messages=[
-                    {"role": "system", "content": SYSTEM_PROMPT},
+                    {"role": "system", "content": GPT_SYSTEM_PROMPT},
                     {"role": "user", "content": prompt}
-                ],
-                temperature=temperature,
-                request_timeout=TIMEOUT
+                ]
             )
-            text = response.choices[0].message["content"].strip()
-            return f"🧠 <b>ChatGPT:</b>\n{text}"
-
+            return response.choices[0].message["content"]
         except Exception as e:
-            if attempt == MAX_RETRIES:
-                return f"⚠️ <b>ChatGPT Error (retry {attempt}/{MAX_RETRIES})</b>\n<code>{str(e)}</code>"
-            else:
-                time.sleep(RETRY_DELAY * attempt)  # exponential backoff
+            retries += 1
+            if retries > GPT_RETRY_MAX:
+                return f"❌ GPT error after {GPT_RETRY_MAX} retries: {str(e)}"
+            time.sleep(1)
