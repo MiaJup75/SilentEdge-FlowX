@@ -20,8 +20,11 @@ PRICE_ENDPOINT = "/api/v3/ticker/price"
 
 def get_binance_price(symbol: str):
     try:
-        response = requests.get(f"{BASE_URL}{PRICE_ENDPOINT}?symbol={symbol}")
-        return float(response.json().get("price", 0))
+        url = f"{BASE_URL}{PRICE_ENDPOINT}?symbol={symbol}"
+        print(f"[DEBUG] Fetching Binance price for: {symbol}")
+        response = requests.get(url)
+        data = response.json()
+        return float(data.get("price", 0))
     except Exception as e:
         print("[Price Fetch Error]", e)
         return 0.0
@@ -35,7 +38,7 @@ def sign_payload(params):
 
 def execute_binance_trade(side: str, amount_usdc=TRADE_AMOUNT, live=LIVE_MODE, slippage=SLIPPAGE_TOLERANCE, retries=3):
     trade_result = {}
-    symbol = f"{BASE_TOKEN}{QUOTE_TOKEN}"
+    symbol = f"{BASE_TOKEN}{QUOTE_TOKEN}".upper()  # ✅ FIXED: Ensure symbol is uppercase
 
     for attempt in range(retries):
         try:
@@ -47,7 +50,6 @@ def execute_binance_trade(side: str, amount_usdc=TRADE_AMOUNT, live=LIVE_MODE, s
             max_price = execution_price * (1 + slippage / 100)
 
             if not live:
-                # Simulated entry
                 trade_result = {
                     "side": side,
                     "amount": amount_usdc,
@@ -76,7 +78,6 @@ def execute_binance_trade(side: str, amount_usdc=TRADE_AMOUNT, live=LIVE_MODE, s
                 if "orderId" in res:
                     price_executed = float(res["fills"][0]["price"]) if res.get("fills") else execution_price
 
-                    # Calculate TP/SL thresholds
                     tp_price = price_executed * (1 + TAKE_PROFIT_PERCENT / 100)
                     sl_price = price_executed * (1 - STOP_LOSS_PERCENT / 100)
 
