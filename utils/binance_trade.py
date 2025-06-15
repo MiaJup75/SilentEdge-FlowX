@@ -1,20 +1,46 @@
 import time
 from datetime import datetime
-
-from utils.ata_checker import check_ata_exists
-from utils.ata_creator import create_token_account_if_needed
 from utils.db import save_trade
-from utils.signer import load_wallet_from_env, load_wallet_public_key
-from utils.format import format_trade_result
-from utils.jupiter_engine import execute_swap
-from config import TRADE_AMOUNT, SLIPPAGE_TOLERANCE, BASE_TOKEN, QUOTE_TOKEN
+from config import TRADE_AMOUNT, SLIPPAGE_TOLERANCE, BASE_TOKEN, QUOTE_TOKEN, LIVE_MODE
+import requests
+import hmac
+import hashlib
+import os
+import base64
+import json
+import uuid
+
+# === Load Binance API Credentials ===
+BINANCE_API_KEY = os.getenv("BINANCE_API_KEY")
+BINANCE_API_SECRET = os.getenv("BINANCE_API_SECRET")
+
+# === Endpoint Configuration ===
+BASE_URL = "https://api.binance.com"
+ORDER_ENDPOINT = "/api/v3/order"
+PRICE_ENDPOINT = "/api/v3/ticker/price"
 
 
-def execute_jupiter_trade(side, amount_usdc=TRADE_AMOUNT, live=False, slippage=SLIPPAGE_TOLERANCE):
+def get_binance_price(symbol: str):
+    try:
+        response = requests.get(f"{BASE_URL}{PRICE_ENDPOINT}?symbol={symbol}")
+        return float(response.json().get("price", 0))
+    except Exception as e:
+        print("[Price Fetch Error]", e)
+        return 0.0
+
+
+def sign_payload(params):
+    query = "&".join([f"{k}={v}" for k, v in params.items()])
+    signature = hmac.new(BINANCE_API_SECRET.encode(), query.encode(), hashlib.sha256).hexdigest()
+    return f"{query}&signature={signature}"
+
+
+def execute_binance_trade(side: str, amount_usdc=TRADE_AMOUNT, live=LIVE_MODE, slippage=SLIPPAGE_TOLERANCE):
     trade_result = {}
+    symbol = f"{BASE_TOKEN}{QUOTE_TOKEN}"
 
     if not live:
-        mock_price = round(1 / 25 + (0.01 * (0.5 - time.time() % 1)), 4)
+        mock_price = round(get_binance_price(symbol), 4)
         trade_result = {
             "side": side,
             "amount": amount_usdc,
@@ -25,85 +51,36 @@ def execute_jupiter_trade(side, amount_usdc=TRADE_AMOUNT, live=False, slippage=S
 
     else:
         try:
-            kp = load_wallet_from_env()
-            wallet_address = str(load_wallet_public_key())
-            print("🔐 Loaded wallet public key:", wallet_address)
-            print("🔐 Wallet secret key length:", len(kp.secret_key))
+            timestamp = int(time.time() * 1000)
+            params = {
+                "symbol": symbol,
+                "side": side.upper(),
+                "type": "MARKET",
+                "quoteOrderQty": amount_usdc,
+                "timestamp": timestamp
+            }
 
-            # ✅ Token direction logic
-            from_token = QUOTE_TOKEN if side == "BUY" else BASE_TOKEN
-            to_token = BASE_TOKEN if side == "BUY" else QUOTE_TOKEN
+            headers = {"X-MBX-APIKEY": BINANCE_API_KEY}
+            payload = sign_payload(params)
 
-            print("📦 Trade Params:")
-            print("→ Side:", side)
-            print("→ From:", from_token)
-            print("→ To:", to_token)
-            print("→ Amount:", amount_usdc)
-            print("→ Slippage:", slippage)
+            url = f"{BASE_URL}{ORDER_ENDPOINT}?{payload}"
+            response = requests.post(url, headers=headers)
+            res = response.json()
 
-            # ✅ ATA check only for SPL tokens (not SOL)
-            if from_token != "So11111111111111111111111111111111111111112":
-                if not check_ata_exists(wallet_address, from_token):
-                    print("⚠️ ATA not found. Attempting to auto-create it...")
-                    ata = create_token_account_if_needed(wallet_address, kp, from_token)
-
-                    if not ata:
-                        alert_msg = (
-                            "❌ <b>Could not auto-create token account.</b>\n"
-                            f"Try sending a small amount of the token to this wallet manually:\n"
-                            f"<code>{wallet_address}</code>"
-                        )
-                        print(alert_msg)
-                        trade_result = {
-                            "side": side,
-                            "amount": amount_usdc,
-                            "status": "❌ ATA creation failed.",
-                            "price": "N/A",
-                            "tx_hash": "N/A",
-                            "alert": alert_msg,
-                            "retry_suggested": True
-                        }
-                        save_trade({
-                            "timestamp": datetime.utcnow().isoformat(),
-                            "side": trade_result["side"],
-                            "amount": trade_result["amount"],
-                            "status": trade_result["status"],
-                            "price": trade_result["price"],
-                            "tx_hash": trade_result["tx_hash"]
-                        })
-                        return trade_result
-
-            # ✅ Execute live swap
-            result = execute_swap(
-                wallet_address=wallet_address,
-                private_key=kp.secret_key,
-                from_token=from_token,
-                to_token=to_token,
-                amount_usdc=amount_usdc,
-                slippage=slippage
-            )
-
-            print("📬 Swap Result:", result)
-
-            if result["success"]:
+            if "orderId" in res:
+                price_executed = res["fills"][0]["price"] if res.get("fills") else "?"
                 trade_result = {
                     "side": side,
                     "amount": amount_usdc,
                     "status": "✅ Live Trade Executed",
-                    "price": f"${result.get('price_estimate', '?')}",
-                    "tx_hash": result.get("tx_hash", "N/A")
+                    "price": f"${price_executed}",
+                    "tx_hash": str(res["orderId"])
                 }
             else:
-                trade_result = {
-                    "side": side,
-                    "amount": amount_usdc,
-                    "status": f"❌ Failed: {result.get('error', 'Unknown')}",
-                    "price": "N/A",
-                    "tx_hash": "N/A"
-                }
+                raise Exception(res.get("msg", "Trade failed"))
 
         except Exception as e:
-            print("🔥 UNCAUGHT EXCEPTION IN TRADE:", str(e))
+            print("🔥 TRADE ERROR:", str(e))
             trade_result = {
                 "side": side,
                 "amount": amount_usdc,
