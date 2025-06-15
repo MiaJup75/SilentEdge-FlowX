@@ -1,13 +1,14 @@
 # === utils/charts.py ===
+import os
 import sqlite3
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 from datetime import datetime, timedelta
-import os
 import uuid
 
 DB_PATH = "trades.db"
 CHART_DIR = "charts"
+TMP_DIR = "/tmp"
 os.makedirs(CHART_DIR, exist_ok=True)
 
 def get_trades():
@@ -122,11 +123,21 @@ def generate_pnl_bar_chart(days=7):
 
     return path
 
-# ✅ This is the missing function for inline charts:
+def cleanup_old_charts(directory=TMP_DIR, days_old=7):
+    now = datetime.now()
+    for fname in os.listdir(directory):
+        if fname.endswith(".png") and "pnl_chart_" in fname:
+            fpath = os.path.join(directory, fname)
+            if os.path.isfile(fpath):
+                created = datetime.fromtimestamp(os.path.getctime(fpath))
+                if (now - created).days >= days_old:
+                    os.remove(fpath)
+
 def generate_pnl_chart(data, label="PnL"):
+    cleanup_old_charts()
     try:
         filename = f"pnl_chart_{uuid.uuid4().hex}.png"
-        filepath = os.path.join("/tmp", filename)
+        filepath = os.path.join(TMP_DIR, filename)
 
         plt.figure(figsize=(5, 2.5))
         plt.plot(data, marker="o", linestyle="-", linewidth=2)
