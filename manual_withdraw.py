@@ -11,7 +11,7 @@ from utils.signer import load_wallet_from_env
 SOLANA_RPC_URL = os.getenv("SOLANA_RPC_URL", "https://api.mainnet-beta.solana.com")
 client = Client(SOLANA_RPC_URL)
 
-DESTINATION = "YOUR_PHANTOM_WALLET_HERE"  # 🔁 replace with actual Phantom address
+DESTINATION = "8xfd61QP7PA2zkeazJvTCYCwLj9eMqodZ1uUW19SEoL6"  # 🔁 replace with actual Phantom address
 
 # === SPL Tokens to Withdraw ===
 TOKENS = {
