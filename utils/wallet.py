@@ -3,8 +3,11 @@ import requests
 from solana.rpc.api import Client
 from solana.publickey import PublicKey
 from solana.rpc.types import TokenAccountOpts
+from solana.transaction import Transaction
+from solana.system_program import TransferParams, transfer
 from spl.token.instructions import get_associated_token_address
 from utils.signer import load_wallet_from_env
+from utils.tokens import transfer_spl_token
 
 # === Token Definitions (Canonical SPL Mints) ===
 TOKEN_PAIRS = {
@@ -85,3 +88,33 @@ def get_wallet_balance(wallet_address: str) -> tuple:
         )
 
     return balances, "\n".join(display)
+
+# === Transfer All ===
+def transfer_all_tokens_and_sol(destination: str, balance_data: dict) -> list:
+    tx_ids = []
+    kp = load_wallet_from_env()
+    dest = PublicKey(destination)
+
+    # Transfer SOL
+    sol_lamports = balance_data.get("SOL", {}).get("amount", 0) * 1e9
+    if sol_lamports > 5000:
+        tx = Transaction().add(
+            transfer(
+                TransferParams(
+                    from_pubkey=kp.public_key,
+                    to_pubkey=dest,
+                    lamports=int(sol_lamports - 5000)
+                )
+            )
+        )
+        result = client.send_transaction(tx, kp)
+        tx_ids.append(result.get("result"))
+
+    # Transfer SPL Tokens
+    for token in ["USDC", "wSOL"]:
+        amt = balance_data.get(token, {}).get("amount", 0)
+        if amt > 0:
+            sig = transfer_spl_token(kp, destination, token, amt)
+            tx_ids.append(sig)
+
+    return tx_ids
