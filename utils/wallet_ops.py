@@ -1,6 +1,6 @@
 import os
 import time
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ParseMode
 from telegram.ext import CallbackContext, CommandHandler, CallbackQueryHandler
 from solana.rpc.api import Client
 from solana.transaction import Transaction
@@ -12,7 +12,6 @@ from utils.signer import load_wallet_from_env
 WITHDRAW_STATE = {}
 SOLANA_RPC = os.getenv("SOLANA_RPC_URL", "https://api.mainnet-beta.solana.com")
 client = Client(SOLANA_RPC)
-
 
 def withdraw(update: Update, context: CallbackContext):
     if not context.args:
@@ -32,12 +31,10 @@ def withdraw(update: Update, context: CallbackContext):
         ]
     ]
     update.message.reply_text(
-        f"Are you sure you want to withdraw ALL SOL to:
-<code>{dest}</code>?",
-        parse_mode="HTML",
-        reply_markup=InlineKeyboardMarkup(buttons)
+        f"You are about to withdraw ALL SOL to:\n<code>{dest}</code>\n\nConfirm?",
+        reply_markup=InlineKeyboardMarkup(buttons),
+        parse_mode=ParseMode.HTML
     )
-
 
 def handle_withdraw_confirmation(update: Update, context: CallbackContext):
     query = update.callback_query
@@ -82,11 +79,10 @@ def handle_withdraw_confirmation(update: Update, context: CallbackContext):
             query.edit_message_text(
                 f"✅ Sent {lamports_to_send / 1e9:.5f} SOL to <code>{dest}</code>\n"
                 f"🔗 <a href='https://solscan.io/tx/{tx_sig}'>View on Solscan</a>",
-                parse_mode="HTML"
+                parse_mode=ParseMode.HTML
             )
         except Exception as e:
             query.edit_message_text(f"❌ Error: {e}")
-
 
 # === Register with dispatcher (add these to your bot setup) ===
 withdraw_handler = CommandHandler("withdraw", withdraw)
