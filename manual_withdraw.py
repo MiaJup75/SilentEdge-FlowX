@@ -1,59 +1,69 @@
 import os
-from solana.publickey import PublicKey
-from solana.rpc.api import Client
-from solana.transaction import Transaction
-from solana.system_program import TransferParams, transfer
-
-from utils.signer import load_wallet_from_env
-from utils.wallet import TOKEN_PAIRS
+from utils.wallet import get_wallet_address
 from utils.tokens import transfer_spl_token
+from solana.rpc.api import Client
+from solana.keypair import Keypair
+from solana.transaction import Transaction
+from solana.publickey import PublicKey
+from solana.system_program import TransferParams, transfer
+from utils.signer import load_wallet_from_env
 
-# === Config ===
-DEST_WALLET = "8xfd61QP7PA2zkeazJvTCYCwLj9eMqodZ1uUW19SEoL6"
-SOLANA_RPC = os.getenv("SOLANA_RPC_URL", "https://api.mainnet-beta.solana.com")
-client = Client(SOLANA_RPC)
+SOLANA_RPC_URL = os.getenv("SOLANA_RPC_URL", "https://api.mainnet-beta.solana.com")
+client = Client(SOLANA_RPC_URL)
 
+DESTINATION = "YOUR_PHANTOM_WALLET_HERE"  # 🔁 replace with actual Phantom address
 
-def transfer_sol():
-    try:
-        kp = load_wallet_from_env()
-        source_pub = kp.public_key
-        dest_pub = PublicKey(DEST_WALLET)
+# === SPL Tokens to Withdraw ===
+TOKENS = {
+    "USDC": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+    "wBTC": "9n4nbM75f5Ui33ZbPYXn59EwSgE8CGsHtAeTH5YFeJ9E",
+    "wETH": "7vfCXTz6Xn9PafWz6ZrYT4hwTnTqQZKrj6kzzF7QjZqx",
+    "wXRP": "6p9hY3F7v2KQhRJgkzGwXeMTufKYdcG89h6K9bGVznhu",
+}
 
-        balance_response = client.get_balance(source_pub)
-        sol_balance = balance_response["result"]["value"]
+DECIMALS = {
+    "USDC": 6,
+    "wBTC": 6,
+    "wETH": 6,
+    "wXRP": 6,
+}
 
-        if sol_balance < 10000:
-            print("⚠️ Not enough SOL to send.")
-            return
+def transfer_sol_if_possible(sender_keypair, dest_pubkey):
+    balance = client.get_balance(sender_keypair.public_key)["result"]["value"]
+    if balance < 10000:  # ~0.00001 SOL
+        print("⚠️ Not enough SOL to send.")
+        return
+    lamports = balance - 5000  # Leave buffer
+    txn = Transaction()
+    txn.add(
+        transfer(
+            TransferParams(
+                from_pubkey=sender_keypair.public_key,
+                to_pubkey=dest_pubkey,
+                lamports=lamports
+            )
+        )
+    )
+    client.send_transaction(txn, [sender_keypair])
+    print(f"✅ Sent ~{lamports/1e9:.6f} SOL to {dest_pubkey}")
 
-        lamports = sol_balance - 10000  # leave a tiny buffer
-        tx = Transaction()
-        tx.add(transfer(TransferParams(
-            from_pubkey=source_pub,
-            to_pubkey=dest_pub,
-            lamports=lamports
-        )))
-        sig = client.send_transaction(tx, kp)["result"]
-        print(f"✅ SOL sent: {lamports / 1e9:.6f} → {DEST_WALLET}")
-        print(f"🔗 https://solscan.io/tx/{sig}")
-    except Exception as e:
-        print(f"❌ SOL transfer failed: {e}")
+def main():
+    sender_keypair = load_wallet_from_env()
+    sender_address = str(sender_keypair.public_key)
+    dest_pubkey = PublicKey(DESTINATION)
 
+    print(f"📤 Withdrawing from {sender_address} to {DESTINATION}...")
 
-def transfer_spl_tokens():
-    kp = load_wallet_from_env()
-    for symbol, mint in TOKEN_PAIRS.items():
-        if symbol == "SOL":
-            continue
+    # Transfer SOL
+    transfer_sol_if_possible(sender_keypair, dest_pubkey)
+
+    # Transfer SPLs
+    for symbol, mint in TOKENS.items():
         try:
-            sig = transfer_spl_token(kp, mint, DEST_WALLET)
-            print(f"✅ {symbol} sent → {DEST_WALLET}")
-            print(f"🔗 https://solscan.io/tx/{sig}")
+            result = transfer_spl_token(mint, DESTINATION, 999999, decimals=DECIMALS[symbol])  # send max
+            print(f"✅ {symbol} transfer result: {result}")
         except Exception as e:
             print(f"❌ {symbol} transfer failed: {e}")
 
-
 if __name__ == "__main__":
-    transfer_sol()
-    transfer_spl_tokens()
+    main()
